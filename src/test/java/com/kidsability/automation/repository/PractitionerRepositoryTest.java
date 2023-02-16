@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -24,10 +25,11 @@ class PractitionerRepositoryTest {
 
     @Test
     public void savePractitioner() {
+        var encoder = new BCryptPasswordEncoder();
         Practitioner practitioner = Practitioner.builder()
-                .email("test2@gmail.com")
+                .email("test@gmail.com")
                 .isAdmin(false)
-                .password("1234")
+                .password(encoder.encode("1234"))
                 .sessionToken("abc")
                 .lastActive(Instant.now())
                 .build();
