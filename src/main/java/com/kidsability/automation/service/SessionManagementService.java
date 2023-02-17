@@ -4,7 +4,6 @@ import com.kidsability.automation.record.Credentials;
 import com.kidsability.automation.model.Practitioner;
 import com.kidsability.automation.record.SessionToken;
 import com.kidsability.automation.repository.PractitionerRepository;
-import jdk.jshell.spi.ExecutionControl;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,7 +22,8 @@ public class SessionManagementService {
         if(practitioner == null) return false;
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         String encodedPassword = practitioner.getPassword();
-        return encoder.matches(credentials.password(), encodedPassword);
+        String encodedTempPassword = practitioner.getTempPassword();
+        return encoder.matches(credentials.password(), encodedPassword) || encoder.matches(credentials.password(), encodedTempPassword);
     }
 
     public SessionToken login(Credentials credentials) {
@@ -45,6 +45,13 @@ public class SessionManagementService {
         practitioner.setLastActive(Instant.now());
         practitionerRepository.save(practitioner);
         return true;
+    }
+
+    public Boolean hasAdminPrivileges(String sessionToken) {
+        Boolean isSessionActive = isSessionActive(sessionToken);
+        if(!isSessionActive) return false;
+        Practitioner practitioner = practitionerRepository.findBySessionToken(sessionToken);
+        return practitioner.getIsAdmin();
     }
 
     public void logout(String sessionToken) {
