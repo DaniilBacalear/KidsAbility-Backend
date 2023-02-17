@@ -58,7 +58,11 @@
 			<artifactId>json</artifactId>
 			<version>20180130</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.eclipse.angus</groupId>
+			<artifactId>angus-mail</artifactId>
+			<version>2.0.1</version>
+		</dependency>
 		<dependency>
 			<!-- Include the sdk as a dependency -->
 			<groupId>com.microsoft.graph</groupId>

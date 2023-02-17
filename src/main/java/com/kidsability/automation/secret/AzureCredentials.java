@@ -1,9 +1,8 @@
-package com.kidsability.automation.auth;
+package com.kidsability.automation.secret;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
 
 @Component
 @Getter
