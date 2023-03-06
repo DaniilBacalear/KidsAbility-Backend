@@ -27,8 +27,10 @@ class PractitionerRepositoryTest {
     public void savePractitioner() {
         var encoder = new BCryptPasswordEncoder();
         Practitioner practitioner = Practitioner.builder()
+                .firstName("Daniil")
+                .lastName("Bacalear")
                 .email("test@gmail.com")
-                .isAdmin(false)
+                .isAdmin(true)
                 .password(encoder.encode("1234"))
                 .sessionToken("abc")
                 .lastActive(Instant.now())

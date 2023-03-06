@@ -1,20 +1,12 @@
 package com.kidsability.automation.service;
 
 import com.kidsability.automation.model.Practitioner;
-import com.kidsability.automation.record.Credentials;
-import com.kidsability.automation.record.SessionToken;
 import com.kidsability.automation.repository.PractitionerRepository;
 import com.kidsability.automation.secret.MailBoxCredentials;
 import com.kidsability.automation.util.EmailUtil;
-import jakarta.mail.*;
-import jakarta.mail.internet.*;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Properties;
-
 @Service
 public class AccountService {
 
@@ -23,6 +15,14 @@ public class AccountService {
     public AccountService(MailBoxCredentials mailBoxCredentials, PractitionerRepository practitionerRepository) {
         this.mailBoxCredentials = mailBoxCredentials;
         this.practitionerRepository = practitionerRepository;
+    }
+
+    public Boolean accountExists(Practitioner practitioner) {
+        return practitionerRepository.findByEmail(practitioner.getEmail()) != null;
+    }
+
+    public Boolean accountExists(String email) {
+        return practitionerRepository.findByEmail(email) != null;
     }
 
     public void registerPractitioner(Practitioner practitioner) {
@@ -42,7 +42,38 @@ public class AccountService {
             EmailUtil.sendEmail(registrationEmailMsg, registrationEmailSubject, practitioner.getEmail(),mailBoxCredentials);
         }
         catch (Exception e) {
-            System.out.printf(e.getMessage());
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public void changePassword(String sessionToken, String password) {
+        Practitioner practitioner = practitionerRepository.findBySessionToken(sessionToken);
+        practitioner.setTempPassword(null);
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        var encoded = encoder.encode(password);
+        practitioner.setPassword(encoded);
+        practitionerRepository.save(practitioner);
+    }
+
+    public void forgotPassword(String email) {
+        if(accountExists(email)) {
+            var encoder = new BCryptPasswordEncoder();
+            String tempPassword = generateTempPassword();
+            StringBuilder sb = new StringBuilder();
+            Practitioner practitioner = practitionerRepository.findByEmail(email);
+            practitioner.setTempPassword(encoder.encode(tempPassword));
+            practitionerRepository.save(practitioner);
+            sb.append("You have indicated that you have forgotten your password. The following is your new temporary ")
+                    .append(tempPassword)
+                    .append(" you can change it after you log in with it.");
+            String forgottenPasswordEmailMsg = sb.toString();
+            String forgottenPasswordEmailSubject = "Password Reset";
+            try {
+                EmailUtil.sendEmail(forgottenPasswordEmailMsg, forgottenPasswordEmailSubject, practitioner.getEmail(), mailBoxCredentials);
+            }
+            catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
         }
     }
 

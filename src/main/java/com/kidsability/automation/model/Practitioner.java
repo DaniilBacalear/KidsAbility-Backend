@@ -2,6 +2,7 @@ package com.kidsability.automation.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Check;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -14,6 +15,7 @@ import java.util.Date;
                 @UniqueConstraint(name = "practitioner_email_unique", columnNames = "email")
         }
 )
+@Check(constraints = "password is not null or temp_password is not null")
 @Component
 @Builder
 @AllArgsConstructor
@@ -50,10 +52,7 @@ public class Practitioner {
     private String sessionToken;
     @Column(name = "last_active")
     private Instant lastActive;
-    @Column(
-            name = "password",
-            nullable = false
-    )
+    @Column(name = "password")
     private String password;
     @Column(name = "temp_password")
     private String tempPassword;
