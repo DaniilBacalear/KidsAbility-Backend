@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
+import java.util.List;
 
 @Entity(name = "Client")
 @Table(
@@ -40,4 +40,7 @@ public class Client {
             nullable = false
     )
     private String kidsabilityId;
+    @ManyToMany
+    private List<Practitioner> practitioners;
+
 }

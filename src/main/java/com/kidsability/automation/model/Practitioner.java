@@ -6,7 +6,9 @@ import org.hibernate.annotations.Check;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Entity(name = "Practitioner")
 @Table(
@@ -61,5 +63,25 @@ public class Practitioner {
 
     @Column(name = "last_name", nullable = false)
     private String lastName;
+
+    @ManyToMany
+    @JoinTable(
+            name = "practitioner_student",
+            joinColumns = @JoinColumn(
+                    name = "practitioner_id",
+                    referencedColumnName = "id"
+            ),
+            inverseJoinColumns = @JoinColumn(
+                    name = "client_id",
+                    referencedColumnName = "id"
+            )
+    )
+    private List<Client> clients;
+    public void addClient(Client client) {
+        if(clients == null) {
+            clients = new ArrayList<>();
+        }
+        clients.add(client);
+    }
 
 }
