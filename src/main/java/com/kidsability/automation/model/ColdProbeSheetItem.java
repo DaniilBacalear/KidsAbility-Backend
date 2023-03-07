@@ -35,10 +35,6 @@ public class ColdProbeSheetItem {
     private Long id;
     @Column
     private String name;
-    @ManyToOne
-    @JoinColumn(name = "cold_probe_sheet_id")
-    private ColdProbeSheet coldProbeSheet;
-
     @OneToMany(mappedBy = "coldProbeSheetItem")
     private Set<ColdProbeSheetItemEntry> coldProbeSheetItemEntries;
 }

@@ -48,8 +48,6 @@ public class ColdProbeSheet {
     private String criterionToMastery;
     @Column
     private String criteria;
-    @OneToOne(mappedBy = "coldProbeSheet")
-    private Program program;
-    @OneToMany(mappedBy = "coldProbeSheet")
+    @OneToMany
     private Set<ColdProbeSheetItem> coldProbeSheetItems;
 }

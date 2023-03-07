@@ -1,14 +1,13 @@
 package com.kidsability.automation.model;
 
 import jakarta.persistence.*;
+import jakarta.transaction.Transactional;
 import lombok.*;
 import org.hibernate.annotations.Check;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Entity(name = "Practitioner")
 @Table(
@@ -64,24 +63,10 @@ public class Practitioner {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @ManyToMany
-    @JoinTable(
-            name = "practitioner_student",
-            joinColumns = @JoinColumn(
-                    name = "practitioner_id",
-                    referencedColumnName = "id"
-            ),
-            inverseJoinColumns = @JoinColumn(
-                    name = "client_id",
-                    referencedColumnName = "id"
-            )
-    )
-    private List<Client> clients;
+    @ManyToMany(fetch = FetchType.EAGER)
+    private Set<Client> clients;
     public void addClient(Client client) {
-        if(clients == null) {
-            clients = new ArrayList<>();
-        }
+        if(clients == null) clients = new HashSet<>();
         clients.add(client);
     }
-
 }

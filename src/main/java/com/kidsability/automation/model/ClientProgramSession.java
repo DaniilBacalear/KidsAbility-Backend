@@ -27,9 +27,6 @@ public class ClientProgramSession {
     private LocalDate date;
     @Column
     private Boolean isActive;
-    @ManyToOne
-    @JoinColumn(name = "program_id")
-    private Program program;
     @OneToMany(mappedBy = "clientProgramSession")
     private Set<ClientProgramSessionColdProbeRecord> clientProgramSessionColdProbeRecords;
 

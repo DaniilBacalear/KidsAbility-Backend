@@ -19,15 +19,5 @@ class AccountServiceTest {
     @Autowired
     private PractitionerRepository practitionerRepository;
 
-    @Test
-    void temp() {
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        assertTrue(encoder.matches("1234", "$2a$10$MnUYp0cgSFahVpYh9H.Htu4V4OiUeiJJCl9yQfrGK75e2y4B4GjLW"));
-    }
-
-    @Test
-    void temp2() {
-        practitionerRepository.deleteById(8l);
-    }
 
 }

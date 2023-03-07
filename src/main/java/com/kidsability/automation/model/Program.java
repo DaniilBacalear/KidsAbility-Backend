@@ -80,14 +80,9 @@ public class Program {
     @Column
     private String bcba;
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(
-            name = "cold_probe_sheet_id",
-            referencedColumnName = "id"
-    )
     private ColdProbeSheet coldProbeSheet;
 
-    @OneToMany(mappedBy = "program")
+    @OneToMany
     private Set<ClientProgramSession> clientProgramSessions;
-
 
 }
