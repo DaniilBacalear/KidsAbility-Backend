@@ -2,7 +2,7 @@ package com.kidsability.automation.service;
 
 import com.kidsability.automation.model.Practitioner;
 import com.kidsability.automation.repository.PractitionerRepository;
-import com.kidsability.automation.secret.MailBoxCredentials;
+import com.kidsability.automation.context.secret.MailBoxCredentials;
 import com.kidsability.automation.util.EmailUtil;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;

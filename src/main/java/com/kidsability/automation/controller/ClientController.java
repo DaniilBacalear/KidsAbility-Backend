@@ -29,4 +29,9 @@ public class ClientController {
         if(!sessionManagementService.isSessionActive(sessionToken)) throw new SessionTokenExpiredException();
         return clientService.getClients(sessionToken);
     }
+
+    @PostMapping("/client/program")
+    public void createProgram() {
+
+    }
 }

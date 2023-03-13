@@ -1,6 +1,6 @@
 package com.kidsability.automation.util;
 
-import com.kidsability.automation.secret.MailBoxCredentials;
+import com.kidsability.automation.context.secret.MailBoxCredentials;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeBodyPart;

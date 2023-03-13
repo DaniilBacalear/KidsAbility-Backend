@@ -1,9 +1,6 @@
 package com.kidsability.automation.data;
 
-import com.kidsability.automation.model.Client;
-import com.kidsability.automation.model.ColdProbeSheet;
-import com.kidsability.automation.model.Practitioner;
-import com.kidsability.automation.model.Program;
+import com.kidsability.automation.model.*;
 import com.kidsability.automation.repository.ClientRepository;
 import com.kidsability.automation.repository.ColdProbeSheetRepository;
 import com.kidsability.automation.repository.PractitionerRepository;
@@ -13,6 +10,9 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.time.LocalDate;
 
 @Component
 public class DataLoader implements ApplicationRunner {
@@ -77,8 +77,14 @@ public class DataLoader implements ApplicationRunner {
         var coldProbeSheet = ColdProbeSheet.builder()
                 .criteria("test")
                 .build();
+        var programTemplate = ProgramTemplate.builder()
+                .name("test template")
+                .link("abcde/efg")
+                .build();
+
         var program = Program.builder()
-                .taskName("test program")
+                .startDate(LocalDate.of(2023, 3, 11))
+                .programTemplate(programTemplate)
                 .coldProbeSheet(coldProbeSheet)
                 .build();
 

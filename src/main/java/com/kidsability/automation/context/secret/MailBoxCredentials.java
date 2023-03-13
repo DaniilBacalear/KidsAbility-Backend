@@ -1,4 +1,4 @@
-package com.kidsability.automation.secret;
+package com.kidsability.automation.context.secret;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
