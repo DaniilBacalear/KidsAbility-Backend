@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 @Entity(name = "ProgramTemplate")
 @Table(
         name = "program_template",
@@ -40,5 +42,20 @@ public class ProgramTemplate {
     private String name;
     @Column
     private String link;
+    @Column
+    private String sharePointId;
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(this.name);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(this == obj) return true;
+        if(obj == null) return false;
+        return obj instanceof ProgramTemplate
+                && ((ProgramTemplate) obj).getName().equals(this.getName());
+    }
 
 }

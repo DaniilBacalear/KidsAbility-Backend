@@ -5,6 +5,7 @@ import com.kidsability.automation.repository.ClientRepository;
 import com.kidsability.automation.repository.ColdProbeSheetRepository;
 import com.kidsability.automation.repository.PractitionerRepository;
 import com.kidsability.automation.service.ClientService;
+import jakarta.annotation.PreDestroy;
 import jakarta.transaction.Transactional;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -30,16 +31,21 @@ public class DataLoader implements ApplicationRunner {
     }
     public void run(ApplicationArguments args) {
         populatePractitioners();
-        populateClients();
-        populatePrograms();
-        var p = practitionerRepository.findByEmail("dbacalea@uwaterloo.ca");
-        var clients = p.getClients();
-        for(var c : clients) {
-            var programs = c.getPrograms();
-            for(var program : programs) {
-                System.out.println(program.toString());
-            }
-        }
+//        populateClients();
+//        populatePrograms();
+//        var p = practitionerRepository.findByEmail("dbacalea@uwaterloo.ca");
+//        var clients = p.getClients();
+//        for(var c : clients) {
+//            var programs = c.getPrograms();
+//            for(var program : programs) {
+//                System.out.println(program.toString());
+//            }
+//        }
+    }
+
+    @PreDestroy
+    public void destroy() {
+
     }
 
     private void populatePractitioners() {

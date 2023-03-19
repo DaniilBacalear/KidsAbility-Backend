@@ -10,5 +10,6 @@ import java.util.List;
 public interface PractitionerRepository extends JpaRepository<Practitioner, Long> {
     public Practitioner findByEmail(String Email);
     public Practitioner findBySessionToken(String sessionToken);
+    
 
 }

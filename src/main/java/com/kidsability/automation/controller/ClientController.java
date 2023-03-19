@@ -3,12 +3,11 @@ package com.kidsability.automation.controller;
 import com.kidsability.automation.customexceptions.ClientAlreadyExistsException;
 import com.kidsability.automation.customexceptions.SessionTokenExpiredException;
 import com.kidsability.automation.model.Client;
-import com.kidsability.automation.model.Practitioner;
 import com.kidsability.automation.service.ClientService;
 import com.kidsability.automation.service.SessionManagementService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Set;
+import java.util.List;
 
 @RestController
 public class ClientController {
@@ -21,13 +20,13 @@ public class ClientController {
     @PostMapping("/client")
     public void createClient(@RequestBody Client client, @RequestHeader("sessionToken") String sessionToken) throws ClientAlreadyExistsException {
         if(!sessionManagementService.isSessionActive(sessionToken)) throw new SessionTokenExpiredException();
-        clientService.createClient(client.getKidsabilityId());
+        clientService.createClient(client.getKidsAbilityId());
     }
 
     @GetMapping("/client")
-    public Set<Client> getClients(@RequestHeader("sessionToken") String sessionToken) {
+    public List<Client> getClients(@RequestHeader("sessionToken") String sessionToken) {
         if(!sessionManagementService.isSessionActive(sessionToken)) throw new SessionTokenExpiredException();
-        return clientService.getClients(sessionToken);
+        return clientService.getClients();
     }
 
     @PostMapping("/client/program")

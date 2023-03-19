@@ -63,7 +63,7 @@ public class Practitioner {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany
     private Set<Client> clients;
     public void addClient(Client client) {
         if(clients == null) clients = new HashSet<>();

@@ -7,6 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 @Entity(name = "ColdProbeSheet")
@@ -49,5 +52,32 @@ public class ColdProbeSheet {
     @Column
     private String criteria;
     @OneToMany
-    private Set<ColdProbeSheetItem> coldProbeSheetItems;
+    @JoinColumn(name = "cold_probe_sheet_id")
+    private List<ColdProbeSheetItem> coldProbeSheetItems;
+
+    public void replaceItem(ColdProbeSheetItem omission, ColdProbeSheetItem replacement) {
+        var coldProbeSheetItems = this.getColdProbeSheetItems();
+        Collections.sort(coldProbeSheetItems, (a, b) -> a.getRowNum() - b.getRowNum());
+        for(int i = 0; i < coldProbeSheetItems.size(); i++) {
+            var item = coldProbeSheetItems.get(i);
+            if(item.getTargetName().equals(omission.getTargetName())) {
+                item.setOmitted(true);
+                replacement.setRowNum(i);
+                for(int j = i; j < coldProbeSheetItems.size(); j++) {
+                    item = coldProbeSheetItems.get(j);
+                    item.setRowNum(j + 1);
+                }
+                coldProbeSheetItems.add(replacement);
+                break;
+            }
+        }
+    }
+
+    public List<ColdProbeSheetItem> getSortedColdProbeSheetItems() {
+        var coldProbeSheetItems = this.getColdProbeSheetItems();
+        if(coldProbeSheetItems == null) return null;
+        Collections.sort(coldProbeSheetItems, (a, b) -> a.getRowNum() - b.getRowNum());
+        return coldProbeSheetItems;
+    }
+
 }

@@ -37,9 +37,6 @@ public class ColdProbeSheetItemEntry {
     @Column
     private LocalDate date;
     @Column
-    private String instructorInitials;
-    @ManyToOne
-    @JoinColumn(name = "cold_probe_sheet_item_id")
-    private ColdProbeSheetItem coldProbeSheetItem;
+    private String practitionerInitials;
 
 }

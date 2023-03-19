@@ -25,7 +25,5 @@ public class ClientProgramSessionColdProbeRecord {
     private String target;
     @Column
     private Boolean isMet;
-    @ManyToOne
-    @JoinColumn(name = "client_program_session_id")
-    private ClientProgramSession clientProgramSession;
+
 }

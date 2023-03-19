@@ -7,8 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-import java.util.Set;
+import java.util.List;
 
 @Entity(name = "ColdProbeSheetItem")
 @Table(name = "cold_probe_sheet_item")
@@ -34,7 +33,12 @@ public class ColdProbeSheetItem {
     )
     private Long id;
     @Column
-    private String name;
-    @OneToMany(mappedBy = "coldProbeSheetItem")
-    private Set<ColdProbeSheetItemEntry> coldProbeSheetItemEntries;
+    private String targetName;
+    @Column
+    private Boolean omitted;
+    @Column
+    private Integer rowNum;
+    @OneToMany
+    @JoinColumn(name = "cold_probe_sheet_item_id")
+    private List<ColdProbeSheetItemEntry> coldProbeSheetItemEntries;
 }

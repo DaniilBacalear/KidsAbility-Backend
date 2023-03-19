@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity(name = "Program")
@@ -32,16 +34,36 @@ public class Program {
             updatable = false
     )
     private Long id;
-
+    @Column
+    private String name;
     @Column
     private LocalDate startDate;
     @Column
     private LocalDate acquisitionDate;
-    @OneToOne(cascade = CascadeType.ALL)
+    @Column
+    private Boolean isMastered;
+    @OneToOne
     private ColdProbeSheet coldProbeSheet;
-    @OneToOne(cascade = CascadeType.PERSIST)
+    @OneToOne
     private ProgramTemplate programTemplate;
+
+    @ManyToOne
+    private Client client;
     @OneToMany
-    private Set<ClientProgramSession> clientProgramSessions;
+    @JoinColumn(name = "program_id")
+    private List<ClientProgramSession> clientProgramSessions;
+
+    // CHANGE THESE TO INCLUDE MASS TRIAL SHEET OPTION!!!!!!!!
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(this.getClient() + this.getName());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(this == obj) return true;
+        if(obj == null) return false;
+        return this.hashCode() == obj.hashCode();
+    }
 
 }
