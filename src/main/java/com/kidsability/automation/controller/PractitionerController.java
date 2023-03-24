@@ -1,5 +1,6 @@
 package com.kidsability.automation.controller;
 
+import com.kidsability.automation.customexceptions.BadRequestException;
 import com.kidsability.automation.customexceptions.ResourceDoesNotExistException;
 import com.kidsability.automation.customexceptions.SessionTokenExpiredException;
 import com.kidsability.automation.model.Client;
@@ -61,6 +62,15 @@ public class PractitionerController {
         }
         catch (Exception e) {
             // Handle this later
+            return programs.stream()
+                    .map(p -> ProgramRecord.builder()
+                            .name(p.getName())
+                            .startDate(p.getStartDate())
+                            .id(p.getId())
+                            .isMastered(p.getIsMastered())
+                            .build()
+                    )
+                    .collect(Collectors.toList());
         }
         List<ProgramRecord> programRecords = new ArrayList<>();
         for(int i = 0; i < programs.size(); i++) {
@@ -101,6 +111,7 @@ public class PractitionerController {
         }
         catch (Exception e) {
             // handle later
+            embeddableProgramTemplateLink = null;
         }
         return ProgramRecord.builder()
                 .name(program.getName())
@@ -109,6 +120,16 @@ public class PractitionerController {
                 .isMastered(program.getIsMastered())
                 .embeddableProgramTemplateLink(embeddableProgramTemplateLink)
                 .build();
+    }
+
+    @PostMapping("/practitioner/client/{kidsAbilityId}/program")
+    public void createProgram(@RequestBody Program program, @PathVariable String kidsAbilityId, @RequestHeader("sessionToken") String sessionToken) throws Exception {
+        if(!sessionManagementService.isSessionActive(sessionToken)) throw new SessionTokenExpiredException();
+        Client client = clientService.getClient(kidsAbilityId);
+        if(client == null) throw new ResourceDoesNotExistException();
+        if(!programService.isProgramValid(program)) throw new BadRequestException("Program format is invalid");
+        programService.createProgram(program, client);
+
     }
 
     @PostMapping("/practitioner/client")

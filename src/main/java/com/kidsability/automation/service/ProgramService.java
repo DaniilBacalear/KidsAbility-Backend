@@ -1,12 +1,12 @@
 package com.kidsability.automation.service;
 
+import com.kidsability.automation.model.Client;
 import com.kidsability.automation.model.Program;
 import com.kidsability.automation.model.ProgramTemplate;
 import com.kidsability.automation.repository.ProgramRepository;
 import com.kidsability.automation.repository.ProgramTemplateRepository;
 import com.microsoft.graph.models.DriveItem;
 import com.microsoft.graph.models.ItemPreviewInfo;
-import com.microsoft.graph.requests.DriveItemCollectionPage;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -93,6 +93,40 @@ public class ProgramService {
 
     public List<ProgramTemplate> getProgramTemplates() {
         return programTemplateRepository.findAll();
+    }
+
+    public void createProgram(Program program, Client client) throws Exception {
+        var resourcePath = program.getMassTrialSheet() != null
+                ? "General/Resources/mass trial sheet template.xlsx" : "General/Resources/cold probe data template.xlsx";
+
+        var resourceDriveItem = sharePointService.getDriveItemByPath(resourcePath);
+
+        var clientRootDriveItem = sharePointService.getDriveItemById(client.getSharePointRootId());
+        var clientProgramsRootDriveItem = sharePointService.getChildren(clientRootDriveItem)
+                .stream()
+                .filter(driveItem -> driveItem.name.equals("Programs"))
+                .findFirst()
+                .orElse(null);
+        var createdProgramFolderDriveItem = sharePointService.createSubFolder(clientProgramsRootDriveItem, program.getName())
+                .get();
+        program.setSharePointId(createdProgramFolderDriveItem.id);
+
+        var copiedFileName = program.getMassTrialSheet() != null ? "mass trial sheet.xlsx" : "cold probe sheet.xlsx";
+        sharePointService.copyItem(resourceDriveItem, createdProgramFolderDriveItem, copiedFileName);
+
+    }
+
+    public Boolean isProgramValid(Program program) throws Exception {
+        if(program == null) return false;
+        if(program.getName() == null || program.getName().isBlank()) return false;
+        fetchLatestProgramTemplates();
+        var programTemplate = program.getProgramTemplate();
+        if(programTemplate == null
+                || programTemplate.getName() == null
+                || !programTemplateRepository.existsProgramTemplateByName(programTemplate.getName())) return false;
+        // program must have either a cold probe sheet or a mass trial sheet but not both
+        return program.getColdProbeSheet() != null ^ program.getMassTrialSheet() != null;
+
     }
 
 }

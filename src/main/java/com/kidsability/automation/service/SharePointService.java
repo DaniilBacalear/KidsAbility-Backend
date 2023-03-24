@@ -1,5 +1,6 @@
 package com.kidsability.automation.service;
 
+import com.google.gson.JsonObject;
 import com.google.gson.internal.LinkedTreeMap;
 import com.kidsability.automation.context.SharePointContext;
 import com.kidsability.automation.context.secret.AzureCredentials;
@@ -7,12 +8,9 @@ import com.kidsability.automation.model.Client;
 import com.kidsability.automation.util.GraphApiUtil;
 import com.microsoft.graph.core.GraphErrorCodes;
 import com.microsoft.graph.http.GraphServiceException;
-import com.microsoft.graph.models.DriveItem;
-import com.microsoft.graph.models.Folder;
-import com.microsoft.graph.models.ItemPreviewInfo;
+import com.microsoft.graph.models.*;
 import com.microsoft.graph.options.Option;
 import com.microsoft.graph.options.QueryOption;
-import com.microsoft.graph.requests.DriveItemCollectionPage;
 import com.microsoft.graph.requests.GraphServiceClient;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -24,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -129,7 +128,7 @@ public class SharePointService {
         }
     }
 
-    private CompletableFuture<DriveItem> createSubFolder(DriveItem parent, String childName) throws Exception{
+    public CompletableFuture<DriveItem> createSubFolder(DriveItem parent, String childName) throws Exception{
         var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/" + parent.id + "/children";
         var child = new DriveItem();
         child.folder = new Folder();
@@ -143,7 +142,7 @@ public class SharePointService {
         var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/" + driveItem.id + "/preview";
         return graphServiceClient.customRequest(url, ItemPreviewInfo.class)
                 .buildRequest()
-                .getAsync();
+                .postAsync(new JsonObject());
     }
 
     public List<DriveItem> getChildren(DriveItem driveItem) {
@@ -169,6 +168,24 @@ public class SharePointService {
                     }
                 })
                 .collect(Collectors.toList());
+    }
+
+    public DriveItem copyItem(DriveItem toCopy, DriveItem destParent, String copiedFileName) {
+        ItemReference parentReference = new ItemReference();
+        parentReference.siteId = sharePointContext.getSiteId();
+        parentReference.id = destParent.id;
+
+       DriveItem res =  graphServiceClient.sites(sharePointContext.getSiteId())
+               .drive()
+               .items(toCopy.id)
+                .copy(DriveItemCopyParameterSet
+                        .newBuilder()
+                        .withName(copiedFileName)
+                        .withParentReference(parentReference)
+                        .build())
+                .buildRequest()
+                .post();
+       return res;
     }
 
 }

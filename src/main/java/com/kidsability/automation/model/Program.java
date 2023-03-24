@@ -37,6 +37,8 @@ public class Program {
     @Column
     private String name;
     @Column
+    private String sharePointId;
+    @Column
     private LocalDate startDate;
     @Column
     private LocalDate acquisitionDate;
@@ -44,6 +46,9 @@ public class Program {
     private Boolean isMastered;
     @OneToOne
     private ColdProbeSheet coldProbeSheet;
+
+    @OneToOne
+    private MassTrialSheet massTrialSheet;
     @OneToOne
     private ProgramTemplate programTemplate;
 

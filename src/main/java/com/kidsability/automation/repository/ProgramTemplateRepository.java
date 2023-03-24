@@ -5,5 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProgramTemplateRepository extends JpaRepository<ProgramTemplate, Long> {
     public ProgramTemplate findByName(String name);
+    public Boolean existsProgramTemplateByName(String name);
 
 }

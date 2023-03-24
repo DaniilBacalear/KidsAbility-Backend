@@ -29,8 +29,8 @@ public class ClientController {
         return clientService.getClients();
     }
 
-    @PostMapping("/client/program")
-    public void createProgram() {
+    @PostMapping("/client/{kidsAbilityId}/program")
+    public void createProgram(@RequestBody @RequestHeader("sessionToken") String sessionToken) {
 
     }
 }
