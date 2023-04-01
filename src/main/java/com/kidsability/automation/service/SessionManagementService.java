@@ -29,7 +29,7 @@ public class SessionManagementService {
     public SessionToken login(Credentials credentials) {
         Practitioner practitioner = practitionerRepository.findByEmail(credentials.email());
         SessionToken sessionToken = generateSessionToken();
-        practitioner.setSessionToken(sessionToken.token());
+        practitioner.setSessionToken(sessionToken.sessionToken());
         practitioner.setLastActive(Instant.now());
         practitionerRepository.save(practitioner);
         return sessionToken;

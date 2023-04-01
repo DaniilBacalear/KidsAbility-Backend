@@ -10,6 +10,7 @@ import com.kidsability.automation.service.SessionManagementService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController()
+@CrossOrigin
 public class AccountController {
 
     private AccountService accountService;

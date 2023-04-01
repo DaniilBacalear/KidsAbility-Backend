@@ -1,14 +1,14 @@
 package com.kidsability.automation.service;
 
-import com.kidsability.automation.model.Client;
-import com.kidsability.automation.model.Program;
-import com.kidsability.automation.model.ProgramTemplate;
-import com.kidsability.automation.repository.ProgramRepository;
-import com.kidsability.automation.repository.ProgramTemplateRepository;
+import com.kidsability.automation.model.*;
+import com.kidsability.automation.repository.*;
+import com.kidsability.automation.util.DateUtil;
 import com.microsoft.graph.models.DriveItem;
 import com.microsoft.graph.models.ItemPreviewInfo;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -16,13 +16,21 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public class ProgramService {
-    private ProgramRepository programRepository;
-    private ProgramTemplateRepository programTemplateRepository;
-    private SharePointService sharePointService;
-    public ProgramService(ProgramRepository programRepository, ProgramTemplateRepository programTemplateRepository, SharePointService sharePointService) {
+    private final ProgramRepository programRepository;
+    private final ProgramTemplateRepository programTemplateRepository;
+    private final SharePointService sharePointService;
+    private final ClientRepository clientRepository;
+    private final ColdProbeSheetRepository coldProbeSheetRepository;
+    private final ColdProbeSheetItemRepository coldProbeSheetItemRepository;
+    public ProgramService(ProgramRepository programRepository, ProgramTemplateRepository programTemplateRepository,
+                          SharePointService sharePointService, ClientRepository clientRepository,
+                          ColdProbeSheetRepository coldProbeSheetRepository, ColdProbeSheetItemRepository coldProbeSheetItemRepository) {
         this.programRepository = programRepository;
         this.programTemplateRepository = programTemplateRepository;
         this.sharePointService = sharePointService;
+        this.clientRepository = clientRepository;
+        this.coldProbeSheetRepository = coldProbeSheetRepository;
+        this.coldProbeSheetItemRepository = coldProbeSheetItemRepository;
     }
 
     public Program getProgram(Long id) {
@@ -67,10 +75,7 @@ public class ProgramService {
 
     public void fetchLatestProgramTemplates() throws Exception {
         var alreadySavedProgramTemplates = programTemplateRepository.findAll();
-        var set = new HashSet<ProgramTemplate>();
-        for(var savedTemplate : alreadySavedProgramTemplates) {
-            set.add(savedTemplate);
-        }
+        var set = new HashSet<ProgramTemplate>(alreadySavedProgramTemplates);
         var programTemplateRootPath = "General/Program Templates";
         var programTemplateRootDriveItem = sharePointService.getDriveItemByPath(programTemplateRootPath);
         try {
@@ -95,14 +100,21 @@ public class ProgramService {
         return programTemplateRepository.findAll();
     }
 
+    @Transactional
     public void createProgram(Program program, Client client) throws Exception {
         var resourcePath = program.getMassTrialSheet() != null
                 ? "General/Resources/mass trial sheet template.xlsx" : "General/Resources/cold probe data template.xlsx";
 
-        var resourceDriveItem = sharePointService.getDriveItemByPath(resourcePath);
+        var programTemplateToCopy = programTemplateRepository.findByName(program.getProgramTemplate().getName());
 
-        var clientRootDriveItem = sharePointService.getDriveItemById(client.getSharePointRootId());
-        var clientProgramsRootDriveItem = sharePointService.getChildren(clientRootDriveItem)
+        // async calls
+        var resourceDriveItemFuture = sharePointService.getDriveItemByPathFuture(resourcePath);
+        var clientRootDriveItemFuture = sharePointService.getDriveItemByIdFuture(client.getSharePointRootId());
+        var programTemplateToCopyDriveItemFuture = sharePointService.getDriveItemByIdFuture(programTemplateToCopy.getSharePointId());
+
+
+
+        var clientProgramsRootDriveItem = sharePointService.getChildren(clientRootDriveItemFuture.get())
                 .stream()
                 .filter(driveItem -> driveItem.name.equals("Programs"))
                 .findFirst()
@@ -112,8 +124,42 @@ public class ProgramService {
         program.setSharePointId(createdProgramFolderDriveItem.id);
 
         var copiedFileName = program.getMassTrialSheet() != null ? "mass trial sheet.xlsx" : "cold probe sheet.xlsx";
-        sharePointService.copyItem(resourceDriveItem, createdProgramFolderDriveItem, copiedFileName);
 
+        //async calls to copy program template and cold sheet/mass trial sheet to new program folder
+        var copySheetFuture = sharePointService.copyItemFuture(resourceDriveItemFuture.get(), createdProgramFolderDriveItem, copiedFileName);
+        var copyProgramTemplateFuture = sharePointService.copyItemFuture(programTemplateToCopyDriveItemFuture.get(),
+                createdProgramFolderDriveItem, programTemplateToCopy.getName());
+
+        var copiedSheetDriveItem = copySheetFuture.get();
+        var copiedProgramTemplateDriveItem = copyProgramTemplateFuture.get();
+
+        // set attributes of new program and save it to db
+        program.setIsMastered(false);
+        program.setProgramTemplate(programTemplateRepository.findByName(program.getProgramTemplate().getName()));
+        program.setSharePointId(createdProgramFolderDriveItem.id);
+        program.setClient(clientRepository.findByKidsAbilityId(client.getKidsAbilityId()));
+        program.setStartDate(DateUtil.getToday());
+        if(program.getColdProbeSheet() != null) {
+            var coldProbeSheet = program.getColdProbeSheet();
+            coldProbeSheet.setSharePointId(copiedSheetDriveItem.id);
+            var coldProbeSheetItems = coldProbeSheet.getColdProbeSheetItems();
+            for(int i = 0; i < coldProbeSheetItems.size(); i++) {
+                var coldProbeSheetItem = coldProbeSheetItems.get(i);
+                coldProbeSheetItem.setRowNum(i);
+                coldProbeSheetItem.setOmitted(false);
+            }
+            coldProbeSheetItemRepository.saveAll(coldProbeSheetItems);
+            coldProbeSheetRepository.save(coldProbeSheet);
+        }
+        else {
+            // TO DO PERSIST MASS TRIAL SHEET ITEMS
+        }
+        programRepository.save(program);
+
+        // associate client with saved program
+        Client updatedClient = clientRepository.findByKidsAbilityId(client.getKidsAbilityId());
+        updatedClient.addProgram(program);
+        clientRepository.save(updatedClient);
     }
 
     public Boolean isProgramValid(Program program) throws Exception {

@@ -7,6 +7,7 @@ import com.kidsability.automation.model.Client;
 import com.kidsability.automation.model.Practitioner;
 import com.kidsability.automation.model.Program;
 import com.kidsability.automation.record.ClientRecord;
+import com.kidsability.automation.record.PractitionerRecord;
 import com.kidsability.automation.record.ProgramRecord;
 import com.kidsability.automation.service.ClientService;
 import com.kidsability.automation.service.PractitionerService;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
+@CrossOrigin
 public class PractitionerController {
     private SessionManagementService sessionManagementService;
     private PractitionerService practitionerService;
@@ -32,6 +34,18 @@ public class PractitionerController {
         this.practitionerService = practitionerService;
         this.clientService = clientService;
         this.programService = programService;
+    }
+
+    @GetMapping("/practitioner")
+    public PractitionerRecord getPractitioner(@RequestHeader("sessionToken") String sessionToken) {
+        if(!sessionManagementService.isSessionActive(sessionToken)) throw new SessionTokenExpiredException();
+        Practitioner practitioner = practitionerService.getPractitioner(sessionToken);
+        return PractitionerRecord.builder()
+                .firstName(practitioner.getFirstName())
+                .lastName(practitioner.getLastName())
+                .isAdmin(practitioner.getIsAdmin())
+                .email(practitioner.getEmail())
+                .build();
     }
     @GetMapping("/practitioner/client")
     public List<ClientRecord> getClients(@RequestHeader("sessionToken") String sessionToken) {
@@ -140,6 +154,11 @@ public class PractitionerController {
         Practitioner practitioner = practitionerService.getPractitioner(sessionToken);
         practitioner.addClient(toAdd);
         practitionerService.savePractitioner(practitioner);
+    }
+
+    @PostMapping("abcd")
+    public void hello() {
+        var a = 1;
     }
 
 }

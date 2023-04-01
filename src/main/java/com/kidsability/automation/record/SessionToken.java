@@ -1,4 +1,4 @@
 package com.kidsability.automation.record;
 
-public record SessionToken(String token) {
+public record SessionToken(String sessionToken) {
 }

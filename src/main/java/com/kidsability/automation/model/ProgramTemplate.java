@@ -1,10 +1,7 @@
 package com.kidsability.automation.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -19,7 +16,8 @@ import java.util.Objects;
 @Component
 @Builder
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class ProgramTemplate {
     @Id

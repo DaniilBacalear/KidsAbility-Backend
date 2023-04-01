@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class SharePointService {
-    private GraphServiceClient graphServiceClient;
-    private SharePointContext sharePointContext;
+    private final GraphServiceClient graphServiceClient;
+    private final SharePointContext sharePointContext;
     public SharePointService(SharePointContext sharePointContext, AzureCredentials azureCredentials) {
         this.graphServiceClient = GraphApiUtil.getGraphClient(azureCredentials);
         this.sharePointContext = sharePointContext;
@@ -43,6 +43,21 @@ public class SharePointService {
                     .buildRequest()
                     .get();
             return driveItem;
+        }
+        catch (GraphServiceException graphServiceException) {
+            if(graphServiceException.getServiceError().isError(GraphErrorCodes.ITEM_NOT_FOUND)) return null;
+            else throw new RuntimeException("Something went wrong");
+        }
+    }
+
+    public CompletableFuture<DriveItem> getDriveItemByPathFuture(String path) throws RuntimeException {
+        var url = "/sites/" + sharePointContext.getSiteId() + "/drive/root:/" + path;
+        try {
+            CompletableFuture<DriveItem> driveItemFuture = (CompletableFuture<DriveItem>) graphServiceClient
+                    .customRequest(url,DriveItem.class)
+                    .buildRequest()
+                    .getAsync();
+            return driveItemFuture;
         }
         catch (GraphServiceException graphServiceException) {
             if(graphServiceException.getServiceError().isError(GraphErrorCodes.ITEM_NOT_FOUND)) return null;
@@ -170,12 +185,12 @@ public class SharePointService {
                 .collect(Collectors.toList());
     }
 
-    public DriveItem copyItem(DriveItem toCopy, DriveItem destParent, String copiedFileName) {
+    public CompletableFuture<DriveItem> copyItemFuture(DriveItem toCopy, DriveItem destParent, String copiedFileName) {
         ItemReference parentReference = new ItemReference();
         parentReference.siteId = sharePointContext.getSiteId();
         parentReference.id = destParent.id;
 
-       DriveItem res =  graphServiceClient.sites(sharePointContext.getSiteId())
+       CompletableFuture<DriveItem> res =  graphServiceClient.sites(sharePointContext.getSiteId())
                .drive()
                .items(toCopy.id)
                 .copy(DriveItemCopyParameterSet
@@ -184,7 +199,7 @@ public class SharePointService {
                         .withParentReference(parentReference)
                         .build())
                 .buildRequest()
-                .post();
+                .postAsync();
        return res;
     }
 

@@ -1,10 +1,7 @@
 package com.kidsability.automation.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -17,7 +14,8 @@ import java.util.Set;
 @Component
 @Builder
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class ColdProbeSheet {
     @Id
@@ -35,6 +33,9 @@ public class ColdProbeSheet {
             updatable = false
     )
     private Long id;
+
+    @Column
+    private String sharePointId;
     @Column
     private String child;
     @Column

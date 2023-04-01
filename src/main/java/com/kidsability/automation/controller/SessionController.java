@@ -8,6 +8,7 @@ import com.kidsability.automation.service.SessionManagementService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@CrossOrigin
 public class SessionController {
     private SessionManagementService sessionManagementService;
     public SessionController(SessionManagementService sessionManagementService) {
@@ -23,8 +24,8 @@ public class SessionController {
 
     @PostMapping("/logout")
     void logout(@RequestBody SessionToken sessionToken) {
-        if(!sessionManagementService.isSessionActive(sessionToken.token())) throw new SessionTokenExpiredException();
-        sessionManagementService.logout(sessionToken.token());
+        if(!sessionManagementService.isSessionActive(sessionToken.sessionToken())) throw new SessionTokenExpiredException();
+        sessionManagementService.logout(sessionToken.sessionToken());
     }
 
 

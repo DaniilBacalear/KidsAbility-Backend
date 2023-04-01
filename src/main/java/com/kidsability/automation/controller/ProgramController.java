@@ -5,6 +5,7 @@ import com.kidsability.automation.model.ProgramTemplate;
 import com.kidsability.automation.record.ProgramTemplateRecord;
 import com.kidsability.automation.service.ProgramService;
 import com.kidsability.automation.service.SessionManagementService;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
+@CrossOrigin
 public class ProgramController {
     private SessionManagementService sessionManagementService;
     private ProgramService programService;

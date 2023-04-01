@@ -1,12 +1,10 @@
 package com.kidsability.automation.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity(name = "ColdProbeSheetItem")
@@ -14,7 +12,8 @@ import java.util.List;
 @Component
 @Builder
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 public class ColdProbeSheetItem {
     @Id
@@ -41,4 +40,11 @@ public class ColdProbeSheetItem {
     @OneToMany
     @JoinColumn(name = "cold_probe_sheet_item_id")
     private List<ColdProbeSheetItemEntry> coldProbeSheetItemEntries;
+
+    public void addColdProbeSheetItem(ColdProbeSheetItemEntry coldProbeSheetItemEntry) {
+        if(coldProbeSheetItemEntries == null) {
+            coldProbeSheetItemEntries = new ArrayList<>();
+        }
+        coldProbeSheetItemEntries.add(coldProbeSheetItemEntry);
+    }
 }
