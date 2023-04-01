@@ -1,15 +1,10 @@
 package com.kidsability.automation.service;
-
 import com.kidsability.automation.customexceptions.ClientAlreadyExistsException;
 import com.kidsability.automation.model.Client;
-import com.kidsability.automation.model.Practitioner;
 import com.kidsability.automation.repository.ClientRepository;
-import com.kidsability.automation.repository.PractitionerRepository;
-import com.microsoft.graph.models.DriveItem;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class ClientService {
@@ -41,6 +36,6 @@ public class ClientService {
 
 
     public List<Client> getClients() {
-        return clientRepository.findAll();
+        return clientRepository.findAllByQuery();
     }
 }

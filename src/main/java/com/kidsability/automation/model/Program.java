@@ -2,15 +2,11 @@ package com.kidsability.automation.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
+
 
 @Entity(name = "Program")
 @Table(name = "program")

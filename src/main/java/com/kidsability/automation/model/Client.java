@@ -1,5 +1,6 @@
 package com.kidsability.automation.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -42,6 +43,7 @@ public class Client {
     private String sharePointRootId;
 
     @OneToMany
+    @JsonBackReference
     @JoinColumn(name = "client_id")
     private Set<Program> programs;
 
