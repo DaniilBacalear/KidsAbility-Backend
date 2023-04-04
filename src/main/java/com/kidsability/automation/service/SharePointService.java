@@ -262,4 +262,17 @@ public class SharePointService {
                 .patch(body);
     }
 
+    public void clearWorkBookRange(DriveItem excelDriveItem, String rangeAddress) {
+        var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
+                + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + rangeAddress + "')/clear";
+
+        JsonObject body = new JsonObject();
+        body.add("applyTo", new JsonPrimitive("All"));
+
+        graphServiceClient
+                .customRequest(url)
+                .buildRequest()
+                .post(body);
+    }
+
 }

@@ -34,7 +34,7 @@ public class ExcelService {
 
         DriveItem coldProbeSheetDriveItem = sharePointService.getDriveItemById(coldProbeSheet.getSharePointId());
 
-        String rangeAddress = getRangeAddress(coldProbeSheet.getExcelRowEnd(), coldProbeSheet.getExcelColEnd());
+        String rangeAddress = getRangeAddress(57, 16);
 
         WorkbookRange workbookRange = sharePointService
                 .getWorkBookRange(coldProbeSheetDriveItem, rangeAddress)
@@ -44,9 +44,9 @@ public class ExcelService {
         initColdProbeDefaults(coldProbeSheet, matrix);
         initColdProbeTargets(coldProbeSheet, matrix);
 
-        var res = sharePointService.updateWorkBookRange(coldProbeSheetDriveItem, rangeAddress, workbookRange);
-        var temp = 1;
-
+        sharePointService.updateWorkBookRange(coldProbeSheetDriveItem, rangeAddress, workbookRange);
+        sharePointService.clearWorkBookRange(coldProbeSheetDriveItem,
+                getRangeAddress(coldProbeSheet.getExcelRowEnd() + 1, 1, 57, 16));
 
     }
 
@@ -73,6 +73,12 @@ public class ExcelService {
 
     private String getRangeAddress(int rowEnd, int colEnd) {
         return "A1:" + getExcelColumnName(colEnd) + rowEnd;
+    }
+
+    private String getRangeAddress(int rowStart, int colStart, int rowEnd, int colEnd) {
+        String start = getExcelColumnName(colStart) + rowStart;
+        String end = getExcelColumnName(colEnd) + rowEnd;
+        return start + ":" + end;
     }
 
     private int[] getRowColFromExcelName(String excelName) {
