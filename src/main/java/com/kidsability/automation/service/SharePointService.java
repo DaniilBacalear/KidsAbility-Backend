@@ -1,6 +1,8 @@
 package com.kidsability.automation.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.internal.LinkedTreeMap;
 import com.kidsability.automation.context.SharePointContext;
 import com.kidsability.automation.context.secret.AzureCredentials;
@@ -9,12 +11,15 @@ import com.kidsability.automation.util.GraphApiUtil;
 import com.microsoft.graph.core.GraphErrorCodes;
 import com.microsoft.graph.http.GraphServiceException;
 import com.microsoft.graph.models.*;
+import com.microsoft.graph.options.HeaderOption;
 import com.microsoft.graph.options.Option;
 import com.microsoft.graph.options.QueryOption;
 import com.microsoft.graph.requests.GraphServiceClient;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -201,6 +206,60 @@ public class SharePointService {
                 .buildRequest()
                 .postAsync();
        return res;
+    }
+
+    public void awaitCopyCompletion(DriveItem copiedItem) {
+        String url = copiedItem
+                .additionalDataManager()
+                .get("graphResponseHeaders").getAsJsonObject()
+                .get("location")
+                .getAsJsonArray()
+                .get(0)
+                .getAsString();
+        RestTemplate restTemplate = new RestTemplate();
+        ObjectMapper mapper = new ObjectMapper();
+        while(true) {
+            String jsonRes = restTemplate.getForObject(url, String.class);
+            try {
+                Map<String, String> map = mapper.readValue(jsonRes, Map.class);
+                if(map.get("status").equals("completed")) {
+                    copiedItem.id = map.get("resourceId");
+                    break;
+                }
+            }
+            catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+        }
+
+    }
+
+    public CompletableFuture<WorkbookRange> getWorkBookRange(DriveItem excelDriveItem, String rangeAddress) {
+        return graphServiceClient
+                .sites(sharePointContext.getSiteId())
+                .drive()
+                .items(excelDriveItem.id)
+                .workbook()
+                .worksheets("Sheet1")
+                .range(WorkbookWorksheetRangeParameterSet
+                        .newBuilder()
+                        .withAddress(rangeAddress)
+                        .build()
+                )
+                .buildRequest()
+                .getAsync();
+    }
+
+    public WorkbookRange updateWorkBookRange(DriveItem excelDriveItem, String rangeAddress,
+                                                                WorkbookRange updatedRange) {
+        var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
+                + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + rangeAddress + "')";
+        JsonObject body = new JsonObject();
+        body.add("formulas", updatedRange.formulas);
+        return (WorkbookRange) graphServiceClient
+                .customRequest(url, WorkbookRange.class)
+                .buildRequest()
+                .patch(body);
     }
 
 }

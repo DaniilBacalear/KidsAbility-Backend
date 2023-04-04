@@ -22,15 +22,18 @@ public class ProgramService {
     private final ClientRepository clientRepository;
     private final ColdProbeSheetRepository coldProbeSheetRepository;
     private final ColdProbeSheetItemRepository coldProbeSheetItemRepository;
+    private final ExcelService excelService;
     public ProgramService(ProgramRepository programRepository, ProgramTemplateRepository programTemplateRepository,
                           SharePointService sharePointService, ClientRepository clientRepository,
-                          ColdProbeSheetRepository coldProbeSheetRepository, ColdProbeSheetItemRepository coldProbeSheetItemRepository) {
+                          ColdProbeSheetRepository coldProbeSheetRepository, ColdProbeSheetItemRepository coldProbeSheetItemRepository,
+                          ExcelService excelService) {
         this.programRepository = programRepository;
         this.programTemplateRepository = programTemplateRepository;
         this.sharePointService = sharePointService;
         this.clientRepository = clientRepository;
         this.coldProbeSheetRepository = coldProbeSheetRepository;
         this.coldProbeSheetItemRepository = coldProbeSheetItemRepository;
+        this.excelService = excelService;
     }
 
     public Program getProgram(Long id) {
@@ -132,7 +135,7 @@ public class ProgramService {
 
         var copiedSheetDriveItem = copySheetFuture.get();
         var copiedProgramTemplateDriveItem = copyProgramTemplateFuture.get();
-
+        sharePointService.awaitCopyCompletion(copiedSheetDriveItem);
         // set attributes of new program and save it to db
         program.setIsMastered(false);
         program.setProgramTemplate(programTemplateRepository.findByName(program.getProgramTemplate().getName()));
@@ -160,6 +163,8 @@ public class ProgramService {
         Client updatedClient = clientRepository.findByKidsAbilityId(client.getKidsAbilityId());
         updatedClient.addProgram(program);
         clientRepository.save(updatedClient);
+
+        excelService.initColdProbeSheet(program);
     }
 
     public Boolean isProgramValid(Program program) throws Exception {

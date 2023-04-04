@@ -52,6 +52,10 @@ public class ColdProbeSheet {
     private String criterionToMastery;
     @Column
     private String criteria;
+    @Column
+    private Integer excelRowEnd;
+    @Column
+    private Integer excelColEnd;
     @OneToMany
     @JoinColumn(name = "cold_probe_sheet_id")
     private List<ColdProbeSheetItem> coldProbeSheetItems;
