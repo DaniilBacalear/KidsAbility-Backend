@@ -8,15 +8,18 @@ import com.kidsability.automation.model.Practitioner;
 import com.kidsability.automation.model.Program;
 import com.kidsability.automation.record.ClientRecord;
 import com.kidsability.automation.record.PractitionerRecord;
+import com.kidsability.automation.record.ProgramHistoryRecord;
 import com.kidsability.automation.record.ProgramRecord;
 import com.kidsability.automation.service.ClientService;
 import com.kidsability.automation.service.PractitionerService;
 import com.kidsability.automation.service.ProgramService;
 import com.kidsability.automation.service.SessionManagementService;
+import org.springframework.security.access.method.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @RestController
@@ -156,9 +159,5 @@ public class PractitionerController {
         practitionerService.savePractitioner(practitioner);
     }
 
-    @PostMapping("abcd")
-    public void hello() {
-        var a = 1;
-    }
 
 }

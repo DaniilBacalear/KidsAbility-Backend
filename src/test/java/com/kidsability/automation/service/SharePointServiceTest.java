@@ -1,5 +1,6 @@
 package com.kidsability.automation.service;
 
+import com.kidsability.automation.factory.WorkBookFactory;
 import com.kidsability.automation.model.Client;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -15,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class SharePointServiceTest {
     @Autowired
     private SharePointService sharePointService;
+    @Autowired
+    private ExcelService excelService;
 
     @MockBean
     private Client clientMock;
@@ -45,6 +48,53 @@ class SharePointServiceTest {
         Mockito.when(clientMock.getKidsAbilityId())
                 .thenReturn("c2");
         sharePointService.createClientFolders(clientMock);
+    }
+
+    @Test
+    void getCellFill() throws Exception {
+        var id = "01JLKQL4SQU6TKB7K3BFGJMY4PXBBTGHWM";
+        var cellAddress = excelService.getCellAddress(21, 4);
+        var excelDriveItem = sharePointService.getDriveItemById(id);
+        var res = sharePointService.getWorkBookCellFill(excelDriveItem, cellAddress).get();
+        var a = 1;
+
+    }
+
+    @Test
+    void getCellFont() throws Exception {
+        var id = "01JLKQL4SQU6TKB7K3BFGJMY4PXBBTGHWM";
+        var cellAddress = excelService.getCellAddress(23, 3);
+        var excelDriveItem = sharePointService.getDriveItemById(id);
+        var res = sharePointService.getWorkBookCellFont(excelDriveItem, cellAddress).get();
+        var a = 1;
+    }
+
+    @Test
+    void getCellFormat() throws Exception {
+        var id = "01JLKQL4SQU6TKB7K3BFGJMY4PXBBTGHWM";
+        var cellAddress = excelService.getCellAddress(23, 3);
+        var excelDriveItem = sharePointService.getDriveItemById(id);
+        var res = sharePointService.getWorkBookCellFormat(excelDriveItem, cellAddress).get();
+        var a = 1;
+    }
+
+    @Test
+    void getCellBorders() throws Exception {
+        var id = "01JLKQL4SQU6TKB7K3BFGJMY4PXBBTGHWM";
+        var cellAddress = excelService.getCellAddress(23, 3);
+        var excelDriveItem = sharePointService.getDriveItemById(id);
+        var res = sharePointService.getWorkBookCellBorders(excelDriveItem, cellAddress).get();
+        var a = 1;
+    }
+
+    @Test
+    void setFill() throws Exception {
+        var id = "01JLKQL4SQU6TKB7K3BFGJMY4PXBBTGHWM";
+        var cellAddress = excelService.getCellAddress(23, 3);
+        var excelDriveItem = sharePointService.getDriveItemById(id);
+        var green = "#00B050";
+        var workBookRangeFill = WorkBookFactory.getWorkBookRangeFill(green);
+        sharePointService.updateWorkBookCellFillAsync(excelDriveItem, cellAddress, workBookRangeFill);
     }
 
 

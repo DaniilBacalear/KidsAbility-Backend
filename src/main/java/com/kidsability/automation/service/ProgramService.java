@@ -1,6 +1,7 @@
 package com.kidsability.automation.service;
 
 import com.kidsability.automation.model.*;
+import com.kidsability.automation.record.ClientProgramSessionRecord;
 import com.kidsability.automation.repository.*;
 import com.kidsability.automation.util.DateUtil;
 import com.microsoft.graph.models.DriveItem;
@@ -8,11 +9,10 @@ import com.microsoft.graph.models.ItemPreviewInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 @Service
 public class ProgramService {
@@ -23,10 +23,14 @@ public class ProgramService {
     private final ColdProbeSheetRepository coldProbeSheetRepository;
     private final ColdProbeSheetItemRepository coldProbeSheetItemRepository;
     private final ExcelService excelService;
+    private final ClientProgramSessionColdProbeRecordRepository clientProgramSessionColdProbeRecordRepository;
+    private final ClientProgramSessionRepository clientProgramSessionRepository;
+    private final ColdProbeSheetItemEntryRepository coldProbeSheetItemEntryRepository;
     public ProgramService(ProgramRepository programRepository, ProgramTemplateRepository programTemplateRepository,
                           SharePointService sharePointService, ClientRepository clientRepository,
                           ColdProbeSheetRepository coldProbeSheetRepository, ColdProbeSheetItemRepository coldProbeSheetItemRepository,
-                          ExcelService excelService) {
+                          ExcelService excelService, ClientProgramSessionColdProbeRecordRepository clientProgramSessionColdProbeRecordRepository,
+                          ClientProgramSessionRepository clientProgramSessionRepository, ColdProbeSheetItemEntryRepository coldProbeSheetItemEntryRepository) {
         this.programRepository = programRepository;
         this.programTemplateRepository = programTemplateRepository;
         this.sharePointService = sharePointService;
@@ -34,6 +38,9 @@ public class ProgramService {
         this.coldProbeSheetRepository = coldProbeSheetRepository;
         this.coldProbeSheetItemRepository = coldProbeSheetItemRepository;
         this.excelService = excelService;
+        this.clientProgramSessionColdProbeRecordRepository = clientProgramSessionColdProbeRecordRepository;
+        this.clientProgramSessionRepository = clientProgramSessionRepository;
+        this.coldProbeSheetItemEntryRepository = coldProbeSheetItemEntryRepository;
     }
 
     public Program getProgram(Long id) {
@@ -74,6 +81,18 @@ public class ProgramService {
         var template = program.getProgramTemplate();
         var templateDriveItem = sharePointService.getDriveItemById(template.getSharePointId());
         return sharePointService.getEmbeddableLinkFuture(templateDriveItem).get().getUrl;
+    }
+
+    public String getEmbeddableExcelSheet(Program program) throws ExecutionException, InterruptedException {
+        if(program.getColdProbeSheet() != null) {
+            var coldProbeSheet = program.getColdProbeSheet();
+            var coldProbeSheetDriveItem = sharePointService.getDriveItemById(coldProbeSheet.getSharePointId());
+            return sharePointService.getEmbeddableLinkFuture(coldProbeSheetDriveItem).get().getUrl;
+        }
+        else {
+            // handle mass trial sheet
+            return "";
+        }
     }
 
     public void fetchLatestProgramTemplates() throws Exception {
@@ -178,6 +197,201 @@ public class ProgramService {
         // program must have either a cold probe sheet or a mass trial sheet but not both
         return program.getColdProbeSheet() != null ^ program.getMassTrialSheet() != null;
 
+    }
+
+    public ClientProgramSession getActiveClientProgramSession(Program program) {
+        if(program.getClientProgramSessions() == null) {
+            return createNewActiveClientProgramSession(program);
+        }
+        else {
+           ClientProgramSession activeSession =  program.getClientProgramSessions()
+                    .stream()
+                    .filter(clientProgramSession -> clientProgramSession.getIsActive())
+                    .findAny()
+                    .orElse(null);
+           if(activeSession == null) return createNewActiveClientProgramSession(program);
+           else return activeSession;
+        }
+    }
+
+    public ClientProgramSession createNewActiveClientProgramSession(Program program) {
+        if(program.getColdProbeSheet() != null) {
+            List<ClientProgramSessionColdProbeRecord> targets = program
+                    .getColdProbeSheet()
+                    .getColdProbeSheetItems()
+                    .stream()
+                    .filter(target -> !target.getOmitted())
+                    .sorted((a, b) -> a.getRowNum() - b.getRowNum())
+                    .map(target -> {
+                        var record = ClientProgramSessionColdProbeRecord
+                                .builder()
+                                .target(target.getTargetName())
+                                .isMet(false)
+                                .isRecorded(false)
+                                .isOmitted(false)
+                                .build();
+                        return record;
+                    }
+                    )
+                    .toList();
+
+            for(int i = 0; i < targets.size(); i++) {
+                var target = targets.get(i);
+                target.setSequenceNumber(i);
+                clientProgramSessionColdProbeRecordRepository.save(target);
+            }
+
+            ClientProgramSession clientProgramSession = ClientProgramSession
+                    .builder()
+                    .isActive(true)
+                    .date(DateUtil.getToday())
+                    .clientProgramSessionColdProbeRecords(targets)
+                    .build();
+            clientProgramSessionRepository.save(clientProgramSession);
+
+            program.addClientProgramSession(clientProgramSession);
+            programRepository.save(program);
+            return clientProgramSession;
+        }
+        else {
+            // handle mass trial TODO
+            return null;
+        }
+    }
+
+    public ClientProgramSessionRecord convertClientProgramSessionToRecord(Program program) {
+        ClientProgramSession clientProgramSession = getActiveClientProgramSession(program);
+        if(clientProgramSession.getClientProgramSessionColdProbeRecords() != null) {
+            ColdProbeSheet coldProbeSheet = program.getColdProbeSheet();
+            List<ColdProbeSheetItem> coldProbeSheetItemsSorted = coldProbeSheet.getSortedColdProbeSheetItems();
+
+            List<ClientProgramSessionColdProbeRecord> clientProgramSessionColdProbeRecords = clientProgramSession
+                    .getClientProgramSessionColdProbeRecords()
+                    .stream()
+                    .sorted((a, b) -> a.getSequenceNumber() - b.getSequenceNumber())
+                    .toList();
+
+            return ClientProgramSessionRecord
+                    .builder()
+                    .isActive(clientProgramSession.getIsActive())
+                    .date(clientProgramSession.getDate())
+                    .id(clientProgramSession.getId())
+                    .clientProgramSessionColdProbeRecords(clientProgramSessionColdProbeRecords)
+                    .build();
+
+        }
+        else {
+            // TODO handle mass trial sheet
+            return null;
+        }
+    }
+
+    public void persistColdProbeProgramSession(Practitioner practitioner, Program program, ClientProgramSession updates) {
+         saveColdProbeProgramSession(program, updates);
+         Map<String, ColdProbeSheetItem> targetNameToColdProbeSheetItem  = new HashMap<>();
+
+         ColdProbeSheet coldProbeSheet = program.getColdProbeSheet();
+
+         List<ColdProbeSheetItem> coldProbeSheetItems = coldProbeSheet
+                .getSortedColdProbeSheetItems();
+         coldProbeSheetItems
+                .forEach(coldProbeSheetItem -> targetNameToColdProbeSheetItem.put(coldProbeSheetItem.getTargetName(), coldProbeSheetItem));
+
+         ClientProgramSession activeClientProgramSession = getActiveClientProgramSession(program);
+         List<ClientProgramSessionColdProbeRecord> clientProgramSessionColdProbeRecordsToSave = activeClientProgramSession
+                .getClientProgramSessionColdProbeRecords();
+        // convert ClientProgramSessionColdProbeRecords to ColdProbeSheetItemEntries
+         for(int i = 0; i < clientProgramSessionColdProbeRecordsToSave.size(); i++) {
+             ClientProgramSessionColdProbeRecord curr = clientProgramSessionColdProbeRecordsToSave.get(i);
+             if(curr.getIsOmitted()) {
+                 ColdProbeSheetItem omission = targetNameToColdProbeSheetItem.get(curr.getTarget());
+                 ClientProgramSessionColdProbeRecord next = clientProgramSessionColdProbeRecordsToSave.get(i + 1);
+                 ColdProbeSheetItem replacement = ColdProbeSheetItem
+                         .builder()
+                         .omitted(next.getIsOmitted())
+                         .targetName(next.getTarget())
+                         .build();
+                 if(next.getIsRecorded()) {
+                     ColdProbeSheetItemEntry replacementItemEntry = ColdProbeSheetItemEntry
+                             .builder()
+                             .success(next.getIsMet())
+                             .practitionerInitials(practitioner.getInitials())
+                             .date(DateUtil.getToday())
+                             .build();
+                     coldProbeSheetItemEntryRepository.save(replacementItemEntry);
+                     replacement.addColdProbeSheetItemEntry(replacementItemEntry);
+                 }
+                 coldProbeSheetItemRepository.save(omission);
+                 coldProbeSheet.replaceItem(omission, replacement);
+                 coldProbeSheetItemRepository.save(replacement);
+                 i ++;
+             }
+             else if(curr.getIsRecorded()){
+                 ColdProbeSheetItem coldProbeSheetItem = targetNameToColdProbeSheetItem.get(curr.getTarget());
+                 ColdProbeSheetItemEntry coldProbeSheetItemEntry = ColdProbeSheetItemEntry
+                         .builder()
+                         .success(curr.getIsMet())
+                         .practitionerInitials(practitioner.getInitials())
+                         .date(DateUtil.getToday())
+                         .build();
+                 coldProbeSheetItemEntryRepository.save(coldProbeSheetItemEntry);
+                 coldProbeSheetItem.addColdProbeSheetItemEntry(coldProbeSheetItemEntry);
+                 coldProbeSheetItemRepository.save(coldProbeSheetItem);
+             }
+         }
+         coldProbeSheetRepository.save(coldProbeSheet);
+         activeClientProgramSession.setClientProgramSessionColdProbeRecords(clientProgramSessionColdProbeRecordsToSave);
+         activeClientProgramSession.setIsActive(false);
+         activeClientProgramSession.setDate(DateUtil.getToday());
+         clientProgramSessionRepository.save(activeClientProgramSession);
+    }
+
+    public void saveColdProbeProgramSession(Program program, ClientProgramSession updates) {
+        ClientProgramSession activeClientProgramSession = getActiveClientProgramSession(program);
+
+        List<ClientProgramSessionColdProbeRecord> oldRecords = activeClientProgramSession
+                .getClientProgramSessionColdProbeRecords();
+        List<ClientProgramSessionColdProbeRecord> updatedRecords = updates
+                .getClientProgramSessionColdProbeRecords();
+
+        for(int i = 0; i < updatedRecords.size(); i++) {
+            var curr = updatedRecords.get(i);
+            curr.setSequenceNumber(i);
+        }
+
+        Map<String, ClientProgramSessionColdProbeRecord> omittedToReplacement = new HashMap<>();
+        Map<String, ClientProgramSessionColdProbeRecord> targetNameToUpdatedRecord = new HashMap<>();
+
+        for(int i = 0; i < updatedRecords.size(); i++) {
+            ClientProgramSessionColdProbeRecord curr = updatedRecords.get(i);
+            targetNameToUpdatedRecord.put(curr.getTarget(), curr);
+            if(curr.getIsOmitted()) {
+                omittedToReplacement.put(curr.getTarget(), updatedRecords.get(i + 1));
+                targetNameToUpdatedRecord.put(updatedRecords.get(i + 1).getTarget(), updatedRecords.get(i + 1));
+                i ++;
+            }
+        }
+
+        List<ClientProgramSessionColdProbeRecord> clientProgramSessionColdProbeRecordsToSave = new ArrayList<>();
+
+        for(ClientProgramSessionColdProbeRecord oldRecord : oldRecords) {
+            if(omittedToReplacement.containsKey(oldRecord.getTarget())) {
+                ClientProgramSessionColdProbeRecord replacement = omittedToReplacement.get(oldRecord.getTarget());
+                oldRecord.setIsOmitted(true);
+                clientProgramSessionColdProbeRecordRepository.save(oldRecord);
+                clientProgramSessionColdProbeRecordsToSave.add(oldRecord);
+                clientProgramSessionColdProbeRecordRepository.save(replacement);
+                clientProgramSessionColdProbeRecordsToSave.add(replacement);
+            }
+            else {
+                ClientProgramSessionColdProbeRecord updated = targetNameToUpdatedRecord.get(oldRecord.getTarget());
+                clientProgramSessionColdProbeRecordRepository.save(updated);
+                clientProgramSessionColdProbeRecordsToSave.add(updated);
+            }
+        }
+        activeClientProgramSession.setDate(DateUtil.getToday());
+        activeClientProgramSession.setClientProgramSessionColdProbeRecords(clientProgramSessionColdProbeRecordsToSave);
+        clientProgramSessionRepository.save(activeClientProgramSession);
     }
 
 }

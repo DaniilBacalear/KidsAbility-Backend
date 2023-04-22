@@ -69,4 +69,8 @@ public class Practitioner {
         if(clients == null) clients = new HashSet<>();
         clients.add(client);
     }
+
+    public String getInitials() {
+        return "" + firstName.toUpperCase().charAt(0) + lastName.toUpperCase().charAt(0);
+    }
 }

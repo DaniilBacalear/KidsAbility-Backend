@@ -1,7 +1,9 @@
 package com.kidsability.automation.model;
 
+import com.kidsability.automation.repository.ColdProbeSheetItemRepository;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -67,8 +69,8 @@ public class ColdProbeSheet {
             var item = coldProbeSheetItems.get(i);
             if(item.getTargetName().equals(omission.getTargetName())) {
                 item.setOmitted(true);
-                replacement.setRowNum(i);
-                for(int j = i; j < coldProbeSheetItems.size(); j++) {
+                replacement.setRowNum(i + 1);
+                for(int j = i + 1; j < coldProbeSheetItems.size(); j++) {
                     item = coldProbeSheetItems.get(j);
                     item.setRowNum(j + 1);
                 }

@@ -41,7 +41,7 @@ public class ColdProbeSheetItem {
     @JoinColumn(name = "cold_probe_sheet_item_id")
     private List<ColdProbeSheetItemEntry> coldProbeSheetItemEntries;
 
-    public void addColdProbeSheetItem(ColdProbeSheetItemEntry coldProbeSheetItemEntry) {
+    public void addColdProbeSheetItemEntry(ColdProbeSheetItemEntry coldProbeSheetItemEntry) {
         if(coldProbeSheetItemEntries == null) {
             coldProbeSheetItemEntries = new ArrayList<>();
         }

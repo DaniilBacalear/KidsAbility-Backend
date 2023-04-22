@@ -1,12 +1,19 @@
 package com.kidsability.automation.model;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 @Entity(name = "ClientProgramSession")
 @Table(name = "client_program_session")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ClientProgramSession {
     @Id
     @SequenceGenerator(
@@ -29,6 +36,7 @@ public class ClientProgramSession {
     private Boolean isActive;
     @OneToMany
     @JoinColumn(name = "client_program_session_id")
-    private Set<ClientProgramSessionColdProbeRecord> clientProgramSessionColdProbeRecords;
+    private List<ClientProgramSessionColdProbeRecord> clientProgramSessionColdProbeRecords;
+
 
 }

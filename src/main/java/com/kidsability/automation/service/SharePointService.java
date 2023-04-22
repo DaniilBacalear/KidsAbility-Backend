@@ -275,4 +275,81 @@ public class SharePointService {
                 .post(body);
     }
 
+//    public CompletableFuture<WorkbookRangeFill> getWorkBookRangeFormat(DriveItem excelDriveItem, String cellAddress) {
+//        var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
+//                + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + cellAddress + "')/format/fill";
+//        var res = (CompletableFuture<WorkbookRangeFill>) graphServiceClient
+//                .customRequest(url, WorkbookRangeFill.class)
+//                .buildRequest()
+//                .getAsync();
+//
+//        return res;
+//    }
+
+    public CompletableFuture<WorkbookRangeFill> getWorkBookCellFill(DriveItem excelDriveItem, String cellAddress) {
+        var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
+                + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + cellAddress + "')/format/fill";
+        var res = (CompletableFuture<WorkbookRangeFill>) graphServiceClient
+                .customRequest(url, WorkbookRangeFill.class)
+                .buildRequest()
+                .getAsync();
+
+        return res;
+    }
+
+    public CompletableFuture<WorkbookRangeFont> getWorkBookCellFont(DriveItem excelDriveItem, String cellAddress) {
+        var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
+                + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + cellAddress + "')/format/font";
+        var res = (CompletableFuture<WorkbookRangeFont>) graphServiceClient
+                .customRequest(url, WorkbookRangeFont.class)
+                .buildRequest()
+                .getAsync();
+
+        return res;
+    }
+
+    public CompletableFuture<WorkbookRangeFormat> getWorkBookCellFormat(DriveItem excelDriveItem, String cellAddress) {
+        var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
+                + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + cellAddress + "')/format";
+        return  graphServiceClient
+                .customRequest(url, WorkbookRangeFormat.class)
+                .buildRequest()
+                .getAsync();
+    }
+
+    public CompletableFuture<WorkbookRangeBorder> getWorkBookCellBorders(DriveItem excelDriveItem, String cellAddress) {
+        var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
+                + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + cellAddress + "')/format/borders";
+        return  graphServiceClient
+                .customRequest(url, WorkbookRangeBorder.class)
+                .buildRequest()
+                .getAsync();
+    }
+
+
+    public void updateWorkBookCellFontAsync(DriveItem excelDriveItem, String cellAddress, WorkbookRangeFont workbookRangeFont) {
+        CompletableFuture.runAsync(() -> {
+            var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
+                    + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + cellAddress + "')/format/font";
+            graphServiceClient
+                    .customRequest(url)
+                    .buildRequest()
+                    .patch(workbookRangeFont);
+        });
+
+    }
+
+    public void updateWorkBookCellFillAsync(DriveItem excelDriveItem, String cellAddress, WorkbookRangeFill workbookRangeFill) {
+        CompletableFuture.runAsync(() -> {
+            var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
+                    + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + cellAddress + "')/format/fill";
+            graphServiceClient
+                    .customRequest(url)
+                    .buildRequest()
+                    .patch(workbookRangeFill);
+        });
+
+    }
+
+
 }

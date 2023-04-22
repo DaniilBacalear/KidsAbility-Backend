@@ -20,6 +20,11 @@ public class ExcelService {
     private static final int COLD_PROBE_MATRIX_ROW_START = 19;
     public static final int COLD_PROBE_MATRIX_ROW_GAP = 3;
     public static final int COLD_PROBE_MATRIX_COL_START = 16;
+
+    public static final String GREY_RGB = "#C0C0C0";
+    public static final String GREEN_RGB = "#00B050";
+    public static final String RED_RGB = "#FF0000";
+
     private final SharePointService sharePointService;
     public ExcelService(SharePointService sharePointService) {
         this.sharePointService = sharePointService;
@@ -71,11 +76,11 @@ public class ExcelService {
         return result;
     }
 
-    private String getRangeAddress(int rowEnd, int colEnd) {
+    public String getRangeAddress(int rowEnd, int colEnd) {
         return "A1:" + getExcelColumnName(colEnd) + rowEnd;
     }
 
-    private String getRangeAddress(int rowStart, int colStart, int rowEnd, int colEnd) {
+    public String getRangeAddress(int rowStart, int colStart, int rowEnd, int colEnd) {
         String start = getExcelColumnName(colStart) + rowStart;
         String end = getExcelColumnName(colEnd) + rowEnd;
         return start + ":" + end;
@@ -152,4 +157,9 @@ public class ExcelService {
             matrix.get(row).getAsJsonArray().set(col, new JsonPrimitive(target.getTargetName()));
         }
     }
+
+    public String getCellAddress(int row, int col) {
+        return "$" + getExcelColumnName(col) + "$" + row;
+    }
+
 }

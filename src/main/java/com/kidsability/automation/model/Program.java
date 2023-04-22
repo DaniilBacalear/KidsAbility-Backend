@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -57,6 +58,12 @@ public class Program {
     private List<ClientProgramSession> clientProgramSessions;
 
     // CHANGE THESE TO INCLUDE MASS TRIAL SHEET OPTION!!!!!!!!
+    public void addClientProgramSession(ClientProgramSession clientProgramSession) {
+        if(getClientProgramSessions() == null) {
+            this.clientProgramSessions = new ArrayList<>();
+        }
+        this.clientProgramSessions.add(clientProgramSession);
+    }
     @Override
     public int hashCode() {
         return Objects.hashCode(this.getClient() + this.getName());

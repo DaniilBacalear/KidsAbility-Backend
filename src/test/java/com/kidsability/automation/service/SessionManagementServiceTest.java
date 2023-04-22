@@ -44,7 +44,7 @@ class SessionManagementServiceTest {
                 .findByEmail("test@gmail.com"))
                 .thenReturn(practitioner);
         var sessionToken = sessionManagementService.login(credentials);
-        assertEquals(60, sessionToken.token().length());
+        assertEquals(60, sessionToken.sessionToken().length());
     }
 
     @Test

@@ -20,4 +20,5 @@ public class PractitionerService {
     public Practitioner savePractitioner(Practitioner practitioner) {
         return practitionerRepository.save(practitioner);
     }
+
 }
