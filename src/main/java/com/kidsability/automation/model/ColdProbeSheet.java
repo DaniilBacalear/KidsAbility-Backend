@@ -58,6 +58,8 @@ public class ColdProbeSheet {
     private Integer excelRowEnd;
     @Column
     private Integer excelColEnd;
+    @Column
+    private Integer persistedSessions;
     @OneToMany
     @JoinColumn(name = "cold_probe_sheet_id")
     private List<ColdProbeSheetItem> coldProbeSheetItems;
@@ -78,6 +80,7 @@ public class ColdProbeSheet {
                 break;
             }
         }
+        this.excelRowEnd ++;
     }
 
     public List<ColdProbeSheetItem> getSortedColdProbeSheetItems() {

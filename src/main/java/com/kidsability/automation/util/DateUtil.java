@@ -15,6 +15,6 @@ public class DateUtil {
         int month = localDate.getMonthValue();
         int day = localDate.getDayOfMonth();
         int year = localDate.getYear();
-        return month + "/" + day + "/" + year;
+        return month + "/" + day + "/" + String.valueOf(year).substring(2);
     }
 }

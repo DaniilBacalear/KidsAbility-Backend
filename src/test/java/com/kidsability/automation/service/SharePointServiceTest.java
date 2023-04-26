@@ -1,7 +1,14 @@
 package com.kidsability.automation.service;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonPrimitive;
 import com.kidsability.automation.factory.WorkBookFactory;
 import com.kidsability.automation.model.Client;
+import com.kidsability.automation.pojo.ExcelCell;
+import com.kidsability.automation.util.DateUtil;
+import com.microsoft.graph.models.*;
+import com.microsoft.graph.requests.WorkbookRangeBorderCollectionPage;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +16,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -52,8 +61,8 @@ class SharePointServiceTest {
 
     @Test
     void getCellFill() throws Exception {
-        var id = "01JLKQL4SQU6TKB7K3BFGJMY4PXBBTGHWM";
-        var cellAddress = excelService.getCellAddress(21, 4);
+        var id = "01JLKQL4TYFIBUDB4MUJHLLBTKZ6UUR3KG";
+        var cellAddress = excelService.getCellAddress(20, 1);
         var excelDriveItem = sharePointService.getDriveItemById(id);
         var res = sharePointService.getWorkBookCellFill(excelDriveItem, cellAddress).get();
         var a = 1;
@@ -62,8 +71,8 @@ class SharePointServiceTest {
 
     @Test
     void getCellFont() throws Exception {
-        var id = "01JLKQL4SQU6TKB7K3BFGJMY4PXBBTGHWM";
-        var cellAddress = excelService.getCellAddress(23, 3);
+        var id = "01JLKQL4TYFIBUDB4MUJHLLBTKZ6UUR3KG";
+        var cellAddress = excelService.getCellAddress(20, 1);
         var excelDriveItem = sharePointService.getDriveItemById(id);
         var res = sharePointService.getWorkBookCellFont(excelDriveItem, cellAddress).get();
         var a = 1;
@@ -71,8 +80,8 @@ class SharePointServiceTest {
 
     @Test
     void getCellFormat() throws Exception {
-        var id = "01JLKQL4SQU6TKB7K3BFGJMY4PXBBTGHWM";
-        var cellAddress = excelService.getCellAddress(23, 3);
+        var id = "01JLKQL4TYFIBUDB4MUJHLLBTKZ6UUR3KG";
+        var cellAddress = excelService.getCellAddress(26, 4);
         var excelDriveItem = sharePointService.getDriveItemById(id);
         var res = sharePointService.getWorkBookCellFormat(excelDriveItem, cellAddress).get();
         var a = 1;
@@ -80,8 +89,8 @@ class SharePointServiceTest {
 
     @Test
     void getCellBorders() throws Exception {
-        var id = "01JLKQL4SQU6TKB7K3BFGJMY4PXBBTGHWM";
-        var cellAddress = excelService.getCellAddress(23, 3);
+        var id = "01JLKQL4TYFIBUDB4MUJHLLBTKZ6UUR3KG";
+        var cellAddress = excelService.getCellAddress(29, 3);
         var excelDriveItem = sharePointService.getDriveItemById(id);
         var res = sharePointService.getWorkBookCellBorders(excelDriveItem, cellAddress).get();
         var a = 1;
@@ -89,13 +98,14 @@ class SharePointServiceTest {
 
     @Test
     void setFill() throws Exception {
-        var id = "01JLKQL4SQU6TKB7K3BFGJMY4PXBBTGHWM";
-        var cellAddress = excelService.getCellAddress(23, 3);
+        var id = "01JLKQL4TYFIBUDB4MUJHLLBTKZ6UUR3KG";
+        var cellAddress = excelService.getCellAddress(42, 1);
         var excelDriveItem = sharePointService.getDriveItemById(id);
         var green = "#00B050";
         var workBookRangeFill = WorkBookFactory.getWorkBookRangeFill(green);
-        sharePointService.updateWorkBookCellFillAsync(excelDriveItem, cellAddress, workBookRangeFill);
+        var sessionToken = sharePointService.getExcelSessionId(excelDriveItem);
+        sharePointService.updateWorkBookCellFill(excelDriveItem, "A42:D42", workBookRangeFill, sessionToken);
+        
     }
-
 
 }

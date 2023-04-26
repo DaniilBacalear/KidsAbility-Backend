@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -82,7 +83,7 @@ public class ProgramController {
     }
 
     @PostMapping("/program/{programId}/session/active/persist")
-    public void persistActiveSession(@RequestHeader("sessionToken") String sessionToken, @PathVariable String programId, @RequestBody Object body) {
+    public void persistActiveSession(@RequestHeader("sessionToken") String sessionToken, @PathVariable String programId, @RequestBody Object body) throws Exception {
         if(!sessionManagementService.isSessionActive(sessionToken)) throw new SessionTokenExpiredException();
         Program program = programService.getProgram(Long.parseLong(programId));
         Practitioner practitioner = practitionerService.getPractitioner(sessionToken);
@@ -92,7 +93,14 @@ public class ProgramController {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
             ClientProgramSession updatedClientProgramSession = mapper.convertValue(body, ClientProgramSession.class);
-            programService.persistColdProbeProgramSession(practitioner, program, updatedClientProgramSession);
+            CompletableFuture.runAsync(() -> {
+                try {
+                    programService.persistColdProbeProgramSession(practitioner, program, updatedClientProgramSession);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
         }
         else {
             // handle mass-trial session save TODO

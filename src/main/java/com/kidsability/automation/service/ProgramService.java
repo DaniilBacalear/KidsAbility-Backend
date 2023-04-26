@@ -171,6 +171,7 @@ public class ProgramService {
                 coldProbeSheetItem.setOmitted(false);
             }
             coldProbeSheetItemRepository.saveAll(coldProbeSheetItems);
+            coldProbeSheet.setPersistedSessions(0);
             coldProbeSheetRepository.save(coldProbeSheet);
         }
         else {
@@ -286,7 +287,7 @@ public class ProgramService {
         }
     }
 
-    public void persistColdProbeProgramSession(Practitioner practitioner, Program program, ClientProgramSession updates) {
+    public void persistColdProbeProgramSession(Practitioner practitioner, Program program, ClientProgramSession updates) throws Exception {
          saveColdProbeProgramSession(program, updates);
          Map<String, ColdProbeSheetItem> targetNameToColdProbeSheetItem  = new HashMap<>();
 
@@ -339,11 +340,13 @@ public class ProgramService {
                  coldProbeSheetItemRepository.save(coldProbeSheetItem);
              }
          }
+         coldProbeSheet.setPersistedSessions(coldProbeSheet.getPersistedSessions() + 1);
          coldProbeSheetRepository.save(coldProbeSheet);
          activeClientProgramSession.setClientProgramSessionColdProbeRecords(clientProgramSessionColdProbeRecordsToSave);
          activeClientProgramSession.setIsActive(false);
          activeClientProgramSession.setDate(DateUtil.getToday());
          clientProgramSessionRepository.save(activeClientProgramSession);
+         excelService.addColdProbeSession(coldProbeSheet, activeClientProgramSession, practitioner);
     }
 
     public void saveColdProbeProgramSession(Program program, ClientProgramSession updates) {
