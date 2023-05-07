@@ -203,11 +203,16 @@ public class ExcelService {
             }
         }
 
+        Map<String, Boolean> targetNameToIsTargetMastered = coldProbeSheet
+                .getColdProbeSheetItems()
+                .stream()
+                .collect(Collectors.toMap(ColdProbeSheetItem::getTargetName, ColdProbeSheetItem::getIsMastered));
+
         for(int i = 0; i < updatedRecords.size(); i++) {
             ClientProgramSessionColdProbeRecord updatedRecord = updatedRecords.get(i);
             if(updatedRecord.getIsRecorded()) {
                 int targetRowNum = targetNameToRowNum.get(updatedRecord.getTarget());
-                updateTargetRecordEntryColdProbe(targetRowNum, coldProbeSheet.getPersistedSessions(), updatedRecord.getIsMet(), excelDriveItem, workbookSessionId);
+                updateTargetRecordEntryColdProbe(targetRowNum, coldProbeSheet.getPersistedSessions(), updatedRecord.getIsMet(), targetNameToIsTargetMastered.get(updatedRecord.getTarget()), excelDriveItem, workbookSessionId);
             }
         }
 
@@ -320,13 +325,18 @@ public class ExcelService {
         sharePointService.shiftCellsDown(excelDriveItem, targetRowsRangeAddress, workbookSessionId);
     }
 
-    public void updateTargetRecordEntryColdProbe(int targetRowNum, int persistedSessions, boolean isMet, DriveItem excelDriveItem, String workbookSessionId) {
+    public void updateTargetRecordEntryColdProbe(int targetRowNum, int persistedSessions, boolean isMet, boolean isMastered, DriveItem excelDriveItem, String workbookSessionId) {
         if(isMet) {
             int excelRow = coldProbeTargetRowNumToExcelRowNum(targetRowNum) + 1;
+            int excelColStart  = 1;
             int excelCol = 2 + persistedSessions;
             String cellAddress = getCellAddress(excelRow, excelCol);
             WorkbookRangeFill metFill = WorkBookFactory.getWorkBookRangeFill(GREEN_RGB);
             sharePointService.updateWorkBookCellFill(excelDriveItem, cellAddress, metFill, workbookSessionId);
+            if(isMastered) {
+                String targetNameCellAddress = getCellAddress(excelRow, excelColStart);
+                sharePointService.updateWorkBookCellFill(excelDriveItem, targetNameCellAddress, metFill, workbookSessionId);
+            }
         }
         else {
             int excelRow = coldProbeTargetRowNumToExcelRowNum(targetRowNum) + 2;

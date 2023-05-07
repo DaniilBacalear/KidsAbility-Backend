@@ -36,6 +36,8 @@ public class ColdProbeSheetItem {
     @Column
     private Boolean omitted;
     @Column
+    private Boolean isMastered;
+    @Column
     private Integer rowNum;
     @OneToMany
     @JoinColumn(name = "cold_probe_sheet_item_id")

@@ -169,6 +169,7 @@ public class ProgramService {
                 var coldProbeSheetItem = coldProbeSheetItems.get(i);
                 coldProbeSheetItem.setRowNum(i);
                 coldProbeSheetItem.setOmitted(false);
+                coldProbeSheetItem.setIsMastered(false);
             }
             coldProbeSheetItemRepository.saveAll(coldProbeSheetItems);
             coldProbeSheet.setPersistedSessions(0);
@@ -221,7 +222,7 @@ public class ProgramService {
                     .getColdProbeSheet()
                     .getColdProbeSheetItems()
                     .stream()
-                    .filter(target -> !target.getOmitted())
+                    .filter(target -> !target.getOmitted() && !target.getIsMastered())
                     .sorted((a, b) -> a.getRowNum() - b.getRowNum())
                     .map(target -> {
                         var record = ClientProgramSessionColdProbeRecord
@@ -230,6 +231,7 @@ public class ProgramService {
                                 .isMet(false)
                                 .isRecorded(false)
                                 .isOmitted(false)
+                                .isInMaintenance(isColdProbeTargetInMaintenance(target.getTargetName(), program))
                                 .build();
                         return record;
                     }
@@ -258,6 +260,27 @@ public class ProgramService {
             // handle mass trial TODO
             return null;
         }
+    }
+
+    public Boolean isColdProbeTargetInMaintenance(String target, Program program) {
+        List<ColdProbeSheetItemEntry> entries = program
+                .getColdProbeSheet()
+                .getColdProbeSheetItems()
+                .stream()
+                .filter(item -> item.getTargetName().equalsIgnoreCase(target))
+                .findFirst()
+                .map(item -> item.getColdProbeSheetItemEntries())
+                .orElse(null);
+        int recentSuccesses = 3;
+        if(entries == null || entries.size() < recentSuccesses) return false;
+        entries.sort((a, b) -> {
+            if (b.getId() > a.getId()) return 1;
+            return -1;
+        });
+        for(int i = 0; i < recentSuccesses; i++) {
+            if(!entries.get(i).getSuccess()) return false;
+        }
+        return true;
     }
 
     public ClientProgramSessionRecord convertClientProgramSessionToRecord(Program program) {
@@ -329,6 +352,7 @@ public class ProgramService {
              }
              else if(curr.getIsRecorded()){
                  ColdProbeSheetItem coldProbeSheetItem = targetNameToColdProbeSheetItem.get(curr.getTarget());
+                 if(isColdProbeTargetInMaintenance(curr.getTarget(), program) && curr.getIsMet()) coldProbeSheetItem.setIsMastered(true);
                  ColdProbeSheetItemEntry coldProbeSheetItemEntry = ColdProbeSheetItemEntry
                          .builder()
                          .success(curr.getIsMet())

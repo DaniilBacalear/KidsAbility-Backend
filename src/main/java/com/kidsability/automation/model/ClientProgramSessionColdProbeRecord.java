@@ -37,6 +37,8 @@ public class ClientProgramSessionColdProbeRecord {
     @Column
     private Boolean isRecorded;
     @Column
+    private Boolean isInMaintenance;
+    @Column
     private Integer sequenceNumber;
 
 }
