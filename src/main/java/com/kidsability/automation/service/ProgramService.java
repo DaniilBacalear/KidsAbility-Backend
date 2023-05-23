@@ -232,6 +232,7 @@ public class ProgramService {
                                 .isRecorded(false)
                                 .isOmitted(false)
                                 .isInMaintenance(isColdProbeTargetInMaintenance(target.getTargetName(), program))
+                                .canOmit(true)
                                 .build();
                         return record;
                     }
@@ -334,6 +335,7 @@ public class ProgramService {
                          .builder()
                          .omitted(next.getIsOmitted())
                          .targetName(next.getTarget())
+                         .isMastered(false)
                          .build();
                  if(next.getIsRecorded()) {
                      ColdProbeSheetItemEntry replacementItemEntry = ColdProbeSheetItemEntry

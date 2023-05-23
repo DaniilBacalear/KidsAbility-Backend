@@ -17,8 +17,9 @@ import java.util.stream.Collectors;
 @Service
 public class ExcelService {
     private static final int COLD_PROBE_MATRIX_ROW_START = 19;
+    public static final int COLD_PROBE_MATRIX_ROW_END = 309;
     public static final int COLD_PROBE_MATRIX_ROW_GAP = 3;
-    public static final int COLD_PROBE_MATRIX_COL_END = 16;
+    public static final int COLD_PROBE_MATRIX_COL_END = 31;
 
     public static final String GREY_RGB = "#C0C0C0";
     public static final String GREEN_RGB = "#00B050";
@@ -43,7 +44,7 @@ public class ExcelService {
 
         DriveItem coldProbeSheetDriveItem = sharePointService.getDriveItemById(coldProbeSheet.getSharePointId());
 
-        String rangeAddress = getRangeAddress(57, COLD_PROBE_MATRIX_COL_END);
+        String rangeAddress = getRangeAddress(COLD_PROBE_MATRIX_ROW_END, COLD_PROBE_MATRIX_COL_END);
 
         WorkbookRange workbookRange = sharePointService
                 .getWorkBookRange(coldProbeSheetDriveItem, rangeAddress)
@@ -55,7 +56,7 @@ public class ExcelService {
 
         sharePointService.updateWorkBookRange(coldProbeSheetDriveItem, rangeAddress, workbookRange);
         sharePointService.clearWorkBookRange(coldProbeSheetDriveItem,
-                getRangeAddress(coldProbeSheet.getExcelRowEnd() + 1, 1, 57, 16));
+                getRangeAddress(coldProbeSheet.getExcelRowEnd() + 1, 1, COLD_PROBE_MATRIX_ROW_END, COLD_PROBE_MATRIX_COL_END));
 
     }
 
@@ -240,7 +241,7 @@ public class ExcelService {
         sharePointService.updateWorkBookCellBorders(excelDriveItem, greyTargetSeparatorAddress, leftTopRightBorders, workbookSessionId);
 
         // add grey separator for entire row
-        String greyRowSeparatorAddress = getRangeAddress(targetRowsTopLeftExcelRowNum, targetRowsTopLeftExcelColNum + 2, targetRowsTopLeftExcelRowNum, COLD_PROBE_MATRIX_COL_END);
+        String greyRowSeparatorAddress = getRangeAddress(targetRowsTopLeftExcelRowNum, targetRowsTopLeftExcelColNum + 2, targetRowsTopLeftExcelRowNum, COLD_PROBE_MATRIX_COL_END - 1);
         sharePointService.updateWorkBookCellBorders(excelDriveItem, greyRowSeparatorAddress, leftTopRightBorders, workbookSessionId);
         sharePointService.updateWorkBookCellFill(excelDriveItem, greyRowSeparatorAddress, greyFill, workbookSessionId);
 
@@ -269,19 +270,19 @@ public class ExcelService {
         WorkbookRangeFont yNFont = WorkBookFactory.getWorkBookFontYN();
 
         // Y borders, format and fonts
-        String yCellRowAddress = getRangeAddress(targetBoxTopLeftExcelRowNum, targetBoxTopLeftExcelColNum + 2, targetBoxTopLeftExcelRowNum, COLD_PROBE_MATRIX_COL_END);
+        String yCellRowAddress = getRangeAddress(targetBoxTopLeftExcelRowNum, targetBoxTopLeftExcelColNum + 2, targetBoxTopLeftExcelRowNum, COLD_PROBE_MATRIX_COL_END - 1);
         sharePointService.updateWorkBookCellBorders(excelDriveItem, yCellRowAddress, leftTopRightBorders, workbookSessionId);
         sharePointService.updateWorkBookCellFormat(excelDriveItem, yCellRowAddress, yNFormat, workbookSessionId);
         sharePointService.updateWorkBookCellFont(excelDriveItem, yCellRowAddress, yNFont, workbookSessionId);
 
         // N borders, format and fonts
-        String nCellRowAddress = getRangeAddress(targetBoxTopLeftExcelRowNum + 1, targetBoxTopLeftExcelColNum + 1, targetBoxTopLeftExcelRowNum + 1, COLD_PROBE_MATRIX_COL_END);
+        String nCellRowAddress = getRangeAddress(targetBoxTopLeftExcelRowNum + 1, targetBoxTopLeftExcelColNum + 1, targetBoxTopLeftExcelRowNum + 1, COLD_PROBE_MATRIX_COL_END - 1);
         sharePointService.updateWorkBookCellBorders(excelDriveItem, nCellRowAddress, leftBottomRightBorders, workbookSessionId);
         sharePointService.updateWorkBookCellFormat(excelDriveItem, nCellRowAddress, yNFormat, workbookSessionId);
         sharePointService.updateWorkBookCellFont(excelDriveItem, nCellRowAddress, yNFont, workbookSessionId);
 
         // set formula values
-        String targetRowRangeAddress = getRangeAddress(targetBoxTopLeftExcelRowNum, targetBoxTopLeftExcelColNum, targetBoxBottomRightExcelRowNum, COLD_PROBE_MATRIX_COL_END);
+        String targetRowRangeAddress = getRangeAddress(targetBoxTopLeftExcelRowNum, targetBoxTopLeftExcelColNum, targetBoxBottomRightExcelRowNum, COLD_PROBE_MATRIX_COL_END - 1);
         WorkbookRange workbookRange = sharePointService.getWorkBookRange(excelDriveItem, targetRowRangeAddress, workbookSessionId).get();
         JsonArray matrix = workbookRange.formulas.getAsJsonArray();
 
@@ -316,7 +317,7 @@ public class ExcelService {
         WorkbookRangeFill fill = WorkBookFactory.getWorkBookRangeFill(RED_RGB);
         sharePointService.updateWorkBookCellFill(excelDriveItem, targetBoxRangeAddress, fill, workbookSessionId);
 
-        int targetRowsTopLeftExcelRowNum = coldProbeTargetRowNumToExcelRowNum(targetRowNum);
+        int targetRowsTopLeftExcelRowNum = coldProbeTargetRowNumToExcelRowNum(targetRowNum) + COLD_PROBE_MATRIX_ROW_GAP;
         int targetRowsTopLeftExcelColNum = 1;
         int targetRowsBottomRightExcelRowNum = targetRowsTopLeftExcelRowNum + 2;
         int targetRowsBottomRightExcelColNum = COLD_PROBE_MATRIX_COL_END;

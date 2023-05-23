@@ -40,5 +40,7 @@ public class ClientProgramSessionColdProbeRecord {
     private Boolean isInMaintenance;
     @Column
     private Integer sequenceNumber;
+    @Column
+    private Boolean canOmit;
 
 }
