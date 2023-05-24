@@ -99,6 +99,7 @@ public class PractitionerController {
                     .startDate(program.getStartDate())
                     .isMastered(program.getIsMastered())
                     .embeddableProgramTemplateLink(embeddableProgramTemplateLink)
+                    .progress(program.getProgress())
                     .build();
             programRecords.add(programRecord);
         }

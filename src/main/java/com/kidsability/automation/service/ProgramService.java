@@ -161,6 +161,7 @@ public class ProgramService {
         program.setSharePointId(createdProgramFolderDriveItem.id);
         program.setClient(clientRepository.findByKidsAbilityId(client.getKidsAbilityId()));
         program.setStartDate(DateUtil.getToday());
+        program.setProgress(0.0d);
         if(program.getColdProbeSheet() != null) {
             var coldProbeSheet = program.getColdProbeSheet();
             coldProbeSheet.setSharePointId(copiedSheetDriveItem.id);
@@ -366,13 +367,31 @@ public class ProgramService {
                  coldProbeSheetItemRepository.save(coldProbeSheetItem);
              }
          }
+
          coldProbeSheet.setPersistedSessions(coldProbeSheet.getPersistedSessions() + 1);
          coldProbeSheetRepository.save(coldProbeSheet);
+         double progression = getColdProbeProgression(coldProbeSheet);
+         program.setProgress(progression);
+         programRepository.save(program);
          activeClientProgramSession.setClientProgramSessionColdProbeRecords(clientProgramSessionColdProbeRecordsToSave);
          activeClientProgramSession.setIsActive(false);
          activeClientProgramSession.setDate(DateUtil.getToday());
          clientProgramSessionRepository.save(activeClientProgramSession);
          excelService.addColdProbeSession(coldProbeSheet, activeClientProgramSession, practitioner);
+    }
+
+    public double getColdProbeProgression(ColdProbeSheet coldProbeSheet) {
+        long masteredTargetCount = coldProbeSheet
+                .getColdProbeSheetItems()
+                .stream()
+                .filter(ColdProbeSheetItem::getIsMastered)
+                .count();
+        long activeTargets = coldProbeSheet
+                .getColdProbeSheetItems()
+                .stream()
+                .filter(coldProbeSheetItem -> !coldProbeSheetItem.getOmitted())
+                .count();
+        return (double) masteredTargetCount / activeTargets * 100d;
     }
 
     public void saveColdProbeProgramSession(Program program, ClientProgramSession updates) {

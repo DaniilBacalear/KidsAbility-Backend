@@ -43,6 +43,8 @@ public class Program {
     private LocalDate acquisitionDate;
     @Column
     private Boolean isMastered;
+    @Column
+    private Double progress;
     @OneToOne
     private ColdProbeSheet coldProbeSheet;
 
