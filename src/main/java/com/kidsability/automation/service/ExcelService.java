@@ -60,56 +60,6 @@ public class ExcelService {
 
     }
 
-    private String getExcelColumnName(int colNum) {
-        final StringBuilder sb = new StringBuilder();
-
-        int num = colNum - 1;
-        while (num >=  0) {
-            int numChar = (num % 26)  + 65;
-            sb.append((char)numChar);
-            num = (num  / 26) - 1;
-        }
-        return sb.reverse().toString();
-    }
-
-    private int getExcelColumnNumber(String column) {
-        int result = 0;
-        for (int i = 0; i < column.length(); i++) {
-            result *= 26;
-            result += column.charAt(i) - 'A' + 1;
-        }
-        return result;
-    }
-
-    public String getRangeAddress(int rowEnd, int colEnd) {
-        return "A1:" + getExcelColumnName(colEnd) + rowEnd;
-    }
-
-    public String getRangeAddress(int rowStart, int colStart, int rowEnd, int colEnd) {
-        String start = getExcelColumnName(colStart) + rowStart;
-        String end = getExcelColumnName(colEnd) + rowEnd;
-        return start + ":" + end;
-    }
-
-    private int[] getRowColFromExcelName(String excelName) {
-        int[] coordinates = new int[2];
-        StringBuilder sb = new StringBuilder();
-        int row;
-        int col;
-        for(int i = 0; i < excelName.length(); i++) {
-            char curr = excelName.charAt(i);
-            if(Character.isDigit(curr)) {
-                row = Integer.parseInt(excelName.substring(i));
-                col = getExcelColumnNumber(sb.toString());
-                coordinates[0] = row - 1;
-                coordinates[1] = col - 1;
-                return coordinates;
-            }
-            else sb.append(curr);
-        }
-        return coordinates;
-    }
-
     private void initColdProbeDefaults(ColdProbeSheet coldProbeSheet, JsonArray matrix) {
         int[] childCell = getRowColFromExcelName("D3");
         int[] codeCell = getRowColFromExcelName("D5");
@@ -161,6 +111,125 @@ public class ExcelService {
             ColdProbeSheetItem target = targets.get(targetIdx);
             matrix.get(row).getAsJsonArray().set(col, new JsonPrimitive(target.getTargetName()));
         }
+    }
+
+    public void initMassTrialSheet(Program program) throws ExecutionException, InterruptedException {
+        var massTrialSheet = program.getMassTrialSheet();
+        var excelDriveItem = sharePointService.getDriveItemById(massTrialSheet.getSharePointId());
+        var sessionId = sharePointService.getExcelSessionId(excelDriveItem);
+        initMassTrialSheetTargets(massTrialSheet, excelDriveItem, sessionId);
+        initMassTrialSheetDefaults(massTrialSheet, excelDriveItem, sessionId);
+    }
+
+    public void initMassTrialSheetTargets(MassTrialSheet massTrialSheet, DriveItem excelDriveItem, String sessionId) {
+        var targets = massTrialSheet.getMassTrialSheetItems();
+        for(var target : targets) {
+            var oldName = "Sheet" + target.getSheetNumber();
+            var newName = target.getTargetName();
+            sharePointService.updateWorkSheetName(excelDriveItem, oldName, newName, sessionId);
+        }
+    }
+
+    public void initMassTrialSheetDefaults(MassTrialSheet massTrialSheet, DriveItem excelDriveItem, String sessionId) throws ExecutionException, InterruptedException {
+        var workBookSheetName = "Mass Trial Info";
+        var massTrialSheetInfoWorkSheetRowEnd = 17;
+        var massTrialSheetInfoWorkSheetColEnd = 14;
+        var rangeAddress = getRangeAddress(massTrialSheetInfoWorkSheetRowEnd, massTrialSheetInfoWorkSheetColEnd);
+        WorkbookRange workbookRange = sharePointService
+                .getWorkBookRange(excelDriveItem, rangeAddress, workBookSheetName, sessionId)
+                .get();
+        JsonArray matrix = workbookRange.formulas.getAsJsonArray();
+
+        List<int[]> defaultCellAddresses = new ArrayList<>();
+        List<String> formulaValues = new ArrayList<>();
+
+        int[] childCell = getRowColFromExcelName("C3");
+        defaultCellAddresses.add(childCell);
+        formulaValues.add(massTrialSheet.getChild());
+
+        int[] taskNameCell = getRowColFromExcelName("F3");
+        defaultCellAddresses.add(taskNameCell);
+        formulaValues.add(massTrialSheet.getTaskName());
+
+        int[] sdCell = getRowColFromExcelName("L3");
+        defaultCellAddresses.add(sdCell);
+        formulaValues.add(massTrialSheet.getSd());
+
+        int[] targetMasteryCell = getRowColFromExcelName("C5");
+        defaultCellAddresses.add(targetMasteryCell);
+        formulaValues.add(massTrialSheet.getTargetMastery());
+
+        int[] revisionCriteriaCell = getRowColFromExcelName("J5");
+        defaultCellAddresses.add(revisionCriteriaCell);
+        formulaValues.add(massTrialSheet.getRevisionCriteria());
+
+        int[] promptLegendCell = getRowColFromExcelName("C11");
+        defaultCellAddresses.add(promptLegendCell);
+        formulaValues.add(massTrialSheet.getPromptLegend());
+
+        int[] instructionsCell = getRowColFromExcelName("L11");
+        defaultCellAddresses.add(instructionsCell);
+        formulaValues.add(massTrialSheet.getInstructions());
+
+        for(int i = 0; i < formulaValues.size(); i++) {
+            int[] cell = defaultCellAddresses.get(i);
+            String formulaValue = formulaValues.get(i);
+            matrix.get(cell[0])
+                    .getAsJsonArray()
+                    .set(cell[1], new JsonPrimitive(formulaValue));
+        }
+
+        sharePointService.updateWorkBookRange(excelDriveItem, rangeAddress, workbookRange, workBookSheetName, sessionId);
+    }
+
+    private String getExcelColumnName(int colNum) {
+        final StringBuilder sb = new StringBuilder();
+
+        int num = colNum - 1;
+        while (num >=  0) {
+            int numChar = (num % 26)  + 65;
+            sb.append((char)numChar);
+            num = (num  / 26) - 1;
+        }
+        return sb.reverse().toString();
+    }
+
+    private int getExcelColumnNumber(String column) {
+        int result = 0;
+        for (int i = 0; i < column.length(); i++) {
+            result *= 26;
+            result += column.charAt(i) - 'A' + 1;
+        }
+        return result;
+    }
+
+    public String getRangeAddress(int rowEnd, int colEnd) {
+        return "A1:" + getExcelColumnName(colEnd) + rowEnd;
+    }
+
+    public String getRangeAddress(int rowStart, int colStart, int rowEnd, int colEnd) {
+        String start = getExcelColumnName(colStart) + rowStart;
+        String end = getExcelColumnName(colEnd) + rowEnd;
+        return start + ":" + end;
+    }
+
+    private int[] getRowColFromExcelName(String excelName) {
+        int[] coordinates = new int[2];
+        StringBuilder sb = new StringBuilder();
+        int row;
+        int col;
+        for(int i = 0; i < excelName.length(); i++) {
+            char curr = excelName.charAt(i);
+            if(Character.isDigit(curr)) {
+                row = Integer.parseInt(excelName.substring(i));
+                col = getExcelColumnNumber(sb.toString());
+                coordinates[0] = row - 1;
+                coordinates[1] = col - 1;
+                return coordinates;
+            }
+            else sb.append(curr);
+        }
+        return coordinates;
     }
 
     public String getCellAddress(int row, int col) {
@@ -221,6 +290,7 @@ public class ExcelService {
     }
 
     public void addColdProbeTarget(int targetRowNum, String target, DriveItem excelDriveItem, String workbookSessionId) throws Exception{
+        String workSheetName = "Sheet1";
         int targetRowsTopLeftExcelRowNum = coldProbeTargetRowNumToExcelRowNum(targetRowNum);
         int targetRowsTopLeftExcelColNum = 1;
 
@@ -237,13 +307,13 @@ public class ExcelService {
         // create grey separator above target box
         String greyTargetSeparatorAddress = getRangeAddress(targetRowsTopLeftExcelRowNum, targetRowsTopLeftExcelColNum, targetRowsTopLeftExcelRowNum, 2);
         sharePointService.mergeCells(excelDriveItem, greyTargetSeparatorAddress, workbookSessionId);
-        sharePointService.updateWorkBookCellFill(excelDriveItem, greyTargetSeparatorAddress, greyFill, workbookSessionId);
+        sharePointService.updateWorkBookCellFill(excelDriveItem, greyTargetSeparatorAddress, greyFill, workSheetName, workbookSessionId);
         sharePointService.updateWorkBookCellBorders(excelDriveItem, greyTargetSeparatorAddress, leftTopRightBorders, workbookSessionId);
 
         // add grey separator for entire row
         String greyRowSeparatorAddress = getRangeAddress(targetRowsTopLeftExcelRowNum, targetRowsTopLeftExcelColNum + 2, targetRowsTopLeftExcelRowNum, COLD_PROBE_MATRIX_COL_END - 1);
         sharePointService.updateWorkBookCellBorders(excelDriveItem, greyRowSeparatorAddress, leftTopRightBorders, workbookSessionId);
-        sharePointService.updateWorkBookCellFill(excelDriveItem, greyRowSeparatorAddress, greyFill, workbookSessionId);
+        sharePointService.updateWorkBookCellFill(excelDriveItem, greyRowSeparatorAddress, greyFill, workSheetName, workbookSessionId);
 
         // create target box
 
@@ -252,12 +322,12 @@ public class ExcelService {
         WorkbookRangeFormat targetBoxFormat = WorkBookFactory.getColdProbeWorkBookTargetFormat();
 
         String topRowAddress = getRangeAddress(targetBoxTopLeftExcelRowNum, targetBoxTopLeftExcelColNum, targetBoxTopLeftExcelRowNum, targetBoxBottomRightExcelColNum);
-        sharePointService.updateWorkBookCellFill(excelDriveItem, topRowAddress, targetFill, workbookSessionId);
+        sharePointService.updateWorkBookCellFill(excelDriveItem, topRowAddress, targetFill, workSheetName, workbookSessionId);
         sharePointService.updateWorkBookCellFont(excelDriveItem, topRowAddress, targetFont, workbookSessionId);
         sharePointService.updateWorkBookCellBorders(excelDriveItem, topRowAddress, leftTopRightBorders, workbookSessionId);
 
         String bottomRowAddress = getRangeAddress(targetBoxBottomRightExcelRowNum, targetBoxTopLeftExcelColNum, targetBoxBottomRightExcelRowNum, targetBoxBottomRightExcelColNum);
-        sharePointService.updateWorkBookCellFill(excelDriveItem, bottomRowAddress, targetFill, workbookSessionId);
+        sharePointService.updateWorkBookCellFill(excelDriveItem, bottomRowAddress, targetFill, workSheetName, workbookSessionId);
         sharePointService.updateWorkBookCellBorders(excelDriveItem, bottomRowAddress, leftBottomRightBorders, workbookSessionId);
 
         String targetBoxAddress = getRangeAddress(targetBoxTopLeftExcelRowNum, targetBoxTopLeftExcelColNum, targetBoxBottomRightExcelRowNum, targetBoxBottomRightExcelColNum);
@@ -283,7 +353,7 @@ public class ExcelService {
 
         // set formula values
         String targetRowRangeAddress = getRangeAddress(targetBoxTopLeftExcelRowNum, targetBoxTopLeftExcelColNum, targetBoxBottomRightExcelRowNum, COLD_PROBE_MATRIX_COL_END - 1);
-        WorkbookRange workbookRange = sharePointService.getWorkBookRange(excelDriveItem, targetRowRangeAddress, workbookSessionId).get();
+        WorkbookRange workbookRange = sharePointService.getWorkBookRange(excelDriveItem, targetRowRangeAddress, workSheetName, workbookSessionId).get();
         JsonArray matrix = workbookRange.formulas.getAsJsonArray();
 
         for(int i = 0; i < matrix.size(); i++) {
@@ -309,13 +379,14 @@ public class ExcelService {
     }
 
     public void omitTargetColdProbe(int targetRowNum, DriveItem excelDriveItem, String workbookSessionId) {
+        String workSheetName = "Sheet1";
         int targetBoxTopLeftExcelRowNum = coldProbeTargetRowNumToExcelRowNum(targetRowNum) + 1;
         int targetBoxTopLeftExcelColNum = 1;
         int targetBoxBottomRightExcelRowNum = targetBoxTopLeftExcelRowNum + 1;
         int targetBoxBottomRightExcelColNum = 2;
         String targetBoxRangeAddress = getRangeAddress(targetBoxTopLeftExcelRowNum, targetBoxTopLeftExcelColNum, targetBoxBottomRightExcelRowNum, targetBoxBottomRightExcelColNum);
         WorkbookRangeFill fill = WorkBookFactory.getWorkBookRangeFill(RED_RGB);
-        sharePointService.updateWorkBookCellFill(excelDriveItem, targetBoxRangeAddress, fill, workbookSessionId);
+        sharePointService.updateWorkBookCellFill(excelDriveItem, targetBoxRangeAddress, fill, workSheetName, workbookSessionId);
 
         int targetRowsTopLeftExcelRowNum = coldProbeTargetRowNumToExcelRowNum(targetRowNum) + COLD_PROBE_MATRIX_ROW_GAP;
         int targetRowsTopLeftExcelColNum = 1;
@@ -327,16 +398,17 @@ public class ExcelService {
     }
 
     public void updateTargetRecordEntryColdProbe(int targetRowNum, int persistedSessions, boolean isMet, boolean isMastered, DriveItem excelDriveItem, String workbookSessionId) {
+        String workSheetName = "Sheet1";
         if(isMet) {
             int excelRow = coldProbeTargetRowNumToExcelRowNum(targetRowNum) + 1;
             int excelColStart  = 1;
             int excelCol = 2 + persistedSessions;
             String cellAddress = getCellAddress(excelRow, excelCol);
             WorkbookRangeFill metFill = WorkBookFactory.getWorkBookRangeFill(GREEN_RGB);
-            sharePointService.updateWorkBookCellFill(excelDriveItem, cellAddress, metFill, workbookSessionId);
+            sharePointService.updateWorkBookCellFill(excelDriveItem, cellAddress, metFill, workSheetName, workbookSessionId);
             if(isMastered) {
                 String targetNameCellAddress = getCellAddress(excelRow, excelColStart);
-                sharePointService.updateWorkBookCellFill(excelDriveItem, targetNameCellAddress, metFill, workbookSessionId);
+                sharePointService.updateWorkBookCellFill(excelDriveItem, targetNameCellAddress, metFill, workSheetName, workbookSessionId);
             }
         }
         else {
@@ -344,22 +416,23 @@ public class ExcelService {
             int excelCol = 2 + persistedSessions;
             String cellAddress = getCellAddress(excelRow, excelCol);
             WorkbookRangeFill unmetFill = WorkBookFactory.getWorkBookRangeFill(RED_RGB);
-            sharePointService.updateWorkBookCellFill(excelDriveItem, cellAddress, unmetFill, workbookSessionId);
+            sharePointService.updateWorkBookCellFill(excelDriveItem, cellAddress, unmetFill, workSheetName, workbookSessionId);
         }
     }
 
     public void updateSessionDateAndPractitionerHeaderColdProbe(int persistedSessions, String practitionerInitials, LocalDate date, DriveItem excelDriveItem , String workbookSessionId) throws ExecutionException, InterruptedException {
+        String workSheetName = "Sheet1";
         int row = COLD_PROBE_MATRIX_ROW_START;
         int col = 2 + persistedSessions;
         String header = DateUtil.getMDY(date) + " " + practitionerInitials;
         String cellAddress = getCellAddress(row, col);
-        WorkbookRange workbookRange = sharePointService.getWorkBookRange(excelDriveItem, cellAddress, workbookSessionId).get();
+        WorkbookRange workbookRange = sharePointService.getWorkBookRange(excelDriveItem, cellAddress, workSheetName, workbookSessionId).get();
         workbookRange
                 .formulas
                 .getAsJsonArray()
                 .get(0)
                 .getAsJsonArray().set(0, new JsonPrimitive(header));
-        sharePointService.updateWorkBookRange(excelDriveItem, cellAddress, workbookRange, workbookSessionId);
+        sharePointService.updateWorkBookRange(excelDriveItem, cellAddress, workbookRange, workSheetName, workbookSessionId);
     }
 
 

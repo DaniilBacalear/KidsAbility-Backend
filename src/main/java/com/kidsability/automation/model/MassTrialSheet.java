@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Entity(name = "MassTrialSheet")
 @Table(name = "mass_trial_sheet")
 @Component
@@ -32,6 +34,9 @@ public class MassTrialSheet {
     private Long id;
 
     @Column
+    private String sharePointId;
+
+    @Column
     private String child;
     @Column
     private String taskName;
@@ -45,4 +50,8 @@ public class MassTrialSheet {
     private String promptLegend;
     @Column
     private String instructions;
+
+    @OneToMany
+    @JoinColumn(name = "mass_trial_sheet_id")
+    private List<MassTrialSheetItem> massTrialSheetItems;
 }

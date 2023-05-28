@@ -26,11 +26,15 @@ public class ProgramService {
     private final ClientProgramSessionColdProbeRecordRepository clientProgramSessionColdProbeRecordRepository;
     private final ClientProgramSessionRepository clientProgramSessionRepository;
     private final ColdProbeSheetItemEntryRepository coldProbeSheetItemEntryRepository;
+
+    private final MassTrialSheetRepository massTrialSheetRepository;
+    private final MassTrialSheetItemRepository massTrialSheetItemRepository;
     public ProgramService(ProgramRepository programRepository, ProgramTemplateRepository programTemplateRepository,
                           SharePointService sharePointService, ClientRepository clientRepository,
                           ColdProbeSheetRepository coldProbeSheetRepository, ColdProbeSheetItemRepository coldProbeSheetItemRepository,
                           ExcelService excelService, ClientProgramSessionColdProbeRecordRepository clientProgramSessionColdProbeRecordRepository,
-                          ClientProgramSessionRepository clientProgramSessionRepository, ColdProbeSheetItemEntryRepository coldProbeSheetItemEntryRepository) {
+                          ClientProgramSessionRepository clientProgramSessionRepository, ColdProbeSheetItemEntryRepository coldProbeSheetItemEntryRepository,
+                          MassTrialSheetRepository massTrialSheetRepository, MassTrialSheetItemRepository massTrialSheetItemRepository) {
         this.programRepository = programRepository;
         this.programTemplateRepository = programTemplateRepository;
         this.sharePointService = sharePointService;
@@ -41,6 +45,8 @@ public class ProgramService {
         this.clientProgramSessionColdProbeRecordRepository = clientProgramSessionColdProbeRecordRepository;
         this.clientProgramSessionRepository = clientProgramSessionRepository;
         this.coldProbeSheetItemEntryRepository = coldProbeSheetItemEntryRepository;
+        this.massTrialSheetRepository = massTrialSheetRepository;
+        this.massTrialSheetItemRepository = massTrialSheetItemRepository;
     }
 
     public Program getProgram(Long id) {
@@ -90,8 +96,12 @@ public class ProgramService {
             return sharePointService.getEmbeddableLinkFuture(coldProbeSheetDriveItem).get().getUrl;
         }
         else {
-            // handle mass trial sheet
-            return "";
+            // TODO handle mass trial sheet
+            var massTrialSheet = program.getMassTrialSheet();
+            var massTrialSheetDriveItem = sharePointService.getDriveItemById(massTrialSheet.getSharePointId());
+            return sharePointService.getEmbeddableLinkFuture(massTrialSheetDriveItem)
+                    .get()
+                    .getUrl;
         }
     }
 
@@ -177,7 +187,20 @@ public class ProgramService {
             coldProbeSheetRepository.save(coldProbeSheet);
         }
         else {
-            // TO DO PERSIST MASS TRIAL SHEET ITEMS
+            // TODO PERSIST MASS TRIAL SHEET ITEMS
+            var massTrialSheet = program.getMassTrialSheet();
+            var massTrialSheetItems = massTrialSheet.getMassTrialSheetItems();
+            for(int i = 0; i < massTrialSheetItems.size(); i++) {
+                var massTrialSheetItem = massTrialSheetItems.get(i);
+                massTrialSheetItem.setSheetNumber(i + 1);
+                massTrialSheetItem.setOmitted(false);
+                massTrialSheetItem.setIsMastered(false);
+                massTrialSheetItem.setPersistedSessions(0);
+                massTrialSheetItem.setLatestRating("None");
+            }
+            massTrialSheetItemRepository.saveAll(massTrialSheetItems);
+            massTrialSheet.setSharePointId(copiedSheetDriveItem.id);
+            massTrialSheetRepository.save(massTrialSheet);
         }
         programRepository.save(program);
 
@@ -185,8 +208,13 @@ public class ProgramService {
         Client updatedClient = clientRepository.findByKidsAbilityId(client.getKidsAbilityId());
         updatedClient.addProgram(program);
         clientRepository.save(updatedClient);
+        if(program.getColdProbeSheet() != null) {
+            excelService.initColdProbeSheet(program);
+        }
+        else {
+            excelService.initMassTrialSheet(program);
+        }
 
-        excelService.initColdProbeSheet(program);
     }
 
     public Boolean isProgramValid(Program program) throws Exception {

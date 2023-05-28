@@ -1,10 +1,7 @@
 package com.kidsability.automation.model;
 
 import jakarta.persistence.*;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.*;
-
-// contains k, v (target, met)
 @Entity(name = "ClientProgramSessionColdProbeRecord")
 @Table(name = "client_program_session_cold_probe_record")
 @Builder

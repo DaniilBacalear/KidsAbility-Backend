@@ -93,13 +93,6 @@ public class ProgramController {
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
             ClientProgramSession updatedClientProgramSession = mapper.convertValue(body, ClientProgramSession.class);
-//            CompletableFuture.runAsync(() -> {
-//                try {
-//                    programService.persistColdProbeProgramSession(practitioner, program, updatedClientProgramSession);
-//                } catch (Exception e) {
-//                    throw new RuntimeException(e);
-//                }
-//            });
             programService.persistColdProbeProgramSession(practitioner, program, updatedClientProgramSession);
 
         }

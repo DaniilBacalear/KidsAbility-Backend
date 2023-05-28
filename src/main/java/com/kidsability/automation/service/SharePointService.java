@@ -255,7 +255,7 @@ public class SharePointService {
                 .getAsync();
     }
 
-    public CompletableFuture<WorkbookRange> getWorkBookRange(DriveItem excelDriveItem, String rangeAddress, String workbookSessionId) {
+    public CompletableFuture<WorkbookRange> getWorkBookRange(DriveItem excelDriveItem, String rangeAddress, String workSheetName, String workbookSessionId) {
         LinkedList<Option> requestOptions = new LinkedList<>();
         requestOptions.add(new HeaderOption("workbook-session-id", workbookSessionId));
         return graphServiceClient
@@ -263,7 +263,7 @@ public class SharePointService {
                 .drive()
                 .items(excelDriveItem.id)
                 .workbook()
-                .worksheets("Sheet1")
+                .worksheets(workSheetName)
                 .range(WorkbookWorksheetRangeParameterSet
                         .newBuilder()
                         .withAddress(rangeAddress)
@@ -286,11 +286,11 @@ public class SharePointService {
     }
 
     public WorkbookRange updateWorkBookRange(DriveItem excelDriveItem, String rangeAddress,
-                                             WorkbookRange updatedRange, String workbookSessionId) {
+                                             WorkbookRange updatedRange, String workSheetName, String workbookSessionId) {
         LinkedList<Option> requestOptions = new LinkedList<>();
         requestOptions.add(new HeaderOption("workbook-session-id", workbookSessionId));
         var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
-                + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + rangeAddress + "')";
+                + excelDriveItem.id + "/workbook/worksheets('" + workSheetName + "')/range(address='" + rangeAddress + "')";
         JsonObject body = new JsonObject();
         body.add("formulas", updatedRange.formulas);
         return (WorkbookRange) graphServiceClient
@@ -365,12 +365,12 @@ public class SharePointService {
                 .patch(workbookRangeFont);
     }
 
-    public void updateWorkBookCellFill(DriveItem excelDriveItem, String cellAddress, WorkbookRangeFill workbookRangeFill,
+    public void updateWorkBookCellFill(DriveItem excelDriveItem, String cellAddress, WorkbookRangeFill workbookRangeFill, String workSheetName,
                                        String workbookSessionId) {
         LinkedList<Option> requestOptions = new LinkedList<>();
         requestOptions.add(new HeaderOption("workbook-session-id", workbookSessionId));
         var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
-                + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + cellAddress + "')/format/fill";
+                + excelDriveItem.id + "/workbook/worksheets('" + workSheetName + "')/range(address='" + cellAddress + "')/format/fill";
         graphServiceClient
                 .customRequest(url)
                 .buildRequest(requestOptions)
@@ -381,7 +381,6 @@ public class SharePointService {
             , String workbookSessionId) {
         LinkedList<Option> requestOptions = new LinkedList<>();
         requestOptions.add(new HeaderOption("workbook-session-id", workbookSessionId));
-        // workbookRangeFormat.fill = WorkBookFactory.getWorkBookRangeFill("#00B050");
         var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
                 + excelDriveItem.id + "/workbook/worksheets('Sheet1')/range(address='" + cellAddress + "')/format";
         graphServiceClient
@@ -403,22 +402,6 @@ public class SharePointService {
                     .buildRequest(requestOptions)
                     .patch(workbookRangeBorder);
         }
-    }
-
-    public void updateCellAsync(DriveItem excelDriveItem, ExcelCell excelCell) {
-//        CompletableFuture.runAsync(() -> {
-//            updateWorkBookCellFont(excelDriveItem, excelCell.getAddress(), excelCell.getFont());
-//            updateWorkBookCellBorders(excelDriveItem, excelCell.getAddress(), excelCell.getBorders());
-//            updateWorkBookCellFill(excelDriveItem, excelCell.getAddress(), excelCell.getFill());
-//            updateWorkBookCellFormat(excelDriveItem, excelCell.getAddress(), excelCell.getFormat());
-//        });
-        String workbookSessionId = getExcelSessionId(excelDriveItem);
-        // TODO Remove line below this
-        mergeCells(excelDriveItem, "A39:B40", workbookSessionId);
-        updateWorkBookCellFont(excelDriveItem, excelCell.getAddress(), excelCell.getFont(), workbookSessionId);
-        updateWorkBookCellBorders(excelDriveItem, excelCell.getAddress(), excelCell.getBorders(), workbookSessionId);
-        updateWorkBookCellFill(excelDriveItem, excelCell.getAddress(), excelCell.getFill(), workbookSessionId);
-        updateWorkBookCellFormat(excelDriveItem, excelCell.getAddress(), excelCell.getFormat(), workbookSessionId);
     }
 
     public String getExcelSessionId(DriveItem excelDriveItem) {
@@ -466,6 +449,21 @@ public class SharePointService {
                         .withShift(shift)
                         .build());
 
+    }
+
+    public void updateWorkSheetName(DriveItem excelDriveItem, String oldWorkSheetName, String newWorkSheetName, String workbookSessionId) {
+        LinkedList<Option> requestOptions = new LinkedList<>();
+        requestOptions.add(new HeaderOption("workbook-session-id", workbookSessionId));
+        var url = "/sites/" + sharePointContext.getSiteId() + "/drive/items/"
+                + excelDriveItem.id + "/workbook/worksheets/" + oldWorkSheetName;
+
+        WorkbookWorksheet workbookWorksheet = new WorkbookWorksheet();
+        workbookWorksheet.name = newWorkSheetName;
+
+        graphServiceClient
+                .customRequest(url)
+                .buildRequest(requestOptions)
+                .patch(workbookWorksheet);
     }
 
 

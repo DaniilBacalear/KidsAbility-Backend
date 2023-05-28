@@ -104,8 +104,39 @@ class SharePointServiceTest {
         var green = "#00B050";
         var workBookRangeFill = WorkBookFactory.getWorkBookRangeFill(green);
         var sessionToken = sharePointService.getExcelSessionId(excelDriveItem);
-        sharePointService.updateWorkBookCellFill(excelDriveItem, "A42:D42", workBookRangeFill, sessionToken);
+        sharePointService.updateWorkBookCellFill(excelDriveItem, "A42:D42", workBookRangeFill,"Sheet1", sessionToken);
         
+    }
+
+    @Test
+    void changeWorksheetName() {
+        var id ="01JLKQL4UQABEVZOJODFGJTTCFHSOA2VAI";
+        var excelDriveItem = sharePointService.getDriveItemById(id);
+        var oldName = "Sheet28";
+        var newName = "Sheet1";
+        var sessionToken = sharePointService.getExcelSessionId(excelDriveItem);
+        sharePointService.updateWorkSheetName(excelDriveItem, oldName, newName, sessionToken);
+    }
+
+    @Test
+    void initMassTrialDefaults() {
+        var id = "01JLKQL4UMU6CMM6YJHRG2OV7THFLEWLBO";
+        var excelDriveItem = sharePointService.getDriveItemById(id);
+        var sessionToken = sharePointService.getExcelSessionId(excelDriveItem);
+
+        var workBookSheetName = "Mass Trial Info";
+        var massTrialSheetInfoWorkSheetRowEnd = 17;
+        var massTrialSheetInfoWorkSheetColEnd = 14;
+        var rangeAddress = excelService.getRangeAddress(massTrialSheetInfoWorkSheetRowEnd, massTrialSheetInfoWorkSheetColEnd);
+        try {
+            WorkbookRange workbookRange = sharePointService
+                    .getWorkBookRange(excelDriveItem, rangeAddress, workBookSheetName, sessionToken)
+                    .get();
+        }
+        catch (Exception e) {
+            var message = e.getMessage();
+            var a = 1;
+        }
     }
 
 }

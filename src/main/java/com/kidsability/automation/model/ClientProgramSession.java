@@ -38,5 +38,9 @@ public class ClientProgramSession {
     @JoinColumn(name = "client_program_session_id")
     private List<ClientProgramSessionColdProbeRecord> clientProgramSessionColdProbeRecords;
 
+    @OneToMany
+    @JoinColumn(name = "client_program_session_id")
+    private List<ClientProgramSessionMassTrialRecord> clientProgramSessionMassTrialRecords;
+
 
 }
