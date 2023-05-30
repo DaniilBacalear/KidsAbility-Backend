@@ -528,9 +528,11 @@ public class ProgramService {
         if(getMassTrialProgression(massTrialSheet) == 100) program.setIsMastered(true);
         program.setProgress(getMassTrialProgression(massTrialSheet));
         programRepository.save(program);
-        updates.setDate(DateUtil.getToday());
-        updates.setIsActive(false);
-        clientProgramSessionRepository.save(updates);
+        ClientProgramSession activeClientProgramSession = getActiveClientProgramSession(program);
+        activeClientProgramSession.setClientProgramSessionMassTrialRecords(updates.getClientProgramSessionMassTrialRecords());
+        activeClientProgramSession.setDate(DateUtil.getToday());
+        activeClientProgramSession.setIsActive(false);
+        clientProgramSessionRepository.save(activeClientProgramSession);
     }
 
     public double getColdProbeProgression(ColdProbeSheet coldProbeSheet) {
