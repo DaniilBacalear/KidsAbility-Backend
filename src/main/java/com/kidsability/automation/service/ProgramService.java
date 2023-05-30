@@ -29,12 +29,16 @@ public class ProgramService {
 
     private final MassTrialSheetRepository massTrialSheetRepository;
     private final MassTrialSheetItemRepository massTrialSheetItemRepository;
+    private final ClientProgramSessionMassTrialRecordRepository clientProgramSessionMassTrialRecordRepository;
+    private final MassTrialSheetItemEntryRepository massTrialSheetItemEntryRepository;
     public ProgramService(ProgramRepository programRepository, ProgramTemplateRepository programTemplateRepository,
                           SharePointService sharePointService, ClientRepository clientRepository,
                           ColdProbeSheetRepository coldProbeSheetRepository, ColdProbeSheetItemRepository coldProbeSheetItemRepository,
                           ExcelService excelService, ClientProgramSessionColdProbeRecordRepository clientProgramSessionColdProbeRecordRepository,
                           ClientProgramSessionRepository clientProgramSessionRepository, ColdProbeSheetItemEntryRepository coldProbeSheetItemEntryRepository,
-                          MassTrialSheetRepository massTrialSheetRepository, MassTrialSheetItemRepository massTrialSheetItemRepository) {
+                          MassTrialSheetRepository massTrialSheetRepository, MassTrialSheetItemRepository massTrialSheetItemRepository,
+                          ClientProgramSessionMassTrialRecordRepository clientProgramSessionMassTrialRecordRepository,
+                          MassTrialSheetItemEntryRepository massTrialSheetItemEntryRepository) {
         this.programRepository = programRepository;
         this.programTemplateRepository = programTemplateRepository;
         this.sharePointService = sharePointService;
@@ -47,6 +51,8 @@ public class ProgramService {
         this.coldProbeSheetItemEntryRepository = coldProbeSheetItemEntryRepository;
         this.massTrialSheetRepository = massTrialSheetRepository;
         this.massTrialSheetItemRepository = massTrialSheetItemRepository;
+        this.clientProgramSessionMassTrialRecordRepository = clientProgramSessionMassTrialRecordRepository;
+        this.massTrialSheetItemEntryRepository = massTrialSheetItemEntryRepository;
     }
 
     public Program getProgram(Long id) {
@@ -190,6 +196,15 @@ public class ProgramService {
             // TODO PERSIST MASS TRIAL SHEET ITEMS
             var massTrialSheet = program.getMassTrialSheet();
             var massTrialSheetItems = massTrialSheet.getMassTrialSheetItems();
+            var randomReviewItem = MassTrialSheetItem
+                    .builder()
+                    .omitted(false)
+                    .isMastered(false)
+                    .persistedSessions(0)
+                    .targetName("Random Review")
+                    .latestRating("None")
+                    .build();
+            massTrialSheetItems.add(0, randomReviewItem);
             for(int i = 0; i < massTrialSheetItems.size(); i++) {
                 var massTrialSheetItem = massTrialSheetItems.get(i);
                 massTrialSheetItem.setSheetNumber(i + 1);
@@ -287,8 +302,44 @@ public class ProgramService {
             return clientProgramSession;
         }
         else {
-            // handle mass trial TODO
-            return null;
+            // TODO handle mass trial
+            List<ClientProgramSessionMassTrialRecord> targets = program
+                    .getMassTrialSheet()
+                    .getMassTrialSheetItems()
+                    .stream()
+                    .filter(massTrialSheetItem -> !massTrialSheetItem.getOmitted() && !massTrialSheetItem.getIsMastered())
+                    .map(massTrialSheetItem -> {
+                        var record = ClientProgramSessionMassTrialRecord
+                                .builder()
+                                .isRecorded(false)
+                                .isOmitted(false)
+                                .prevRating(massTrialSheetItem.getLatestRating())
+                                .rating("")
+                                .isRandomReview(massTrialSheetItem.getTargetName().equals("Random Review"))
+                                .target(massTrialSheetItem.getTargetName())
+                                .yNSeries("")
+                                .randomReviewTargetSeries("")
+                                .canOmit(true)
+                                .sequenceNumber(massTrialSheetItem.getSheetNumber())
+                                .build();
+                        return record;
+                    })
+                    .toList();
+
+            clientProgramSessionMassTrialRecordRepository.saveAll(targets);
+
+            ClientProgramSession clientProgramSession = ClientProgramSession
+                    .builder()
+                    .isActive(true)
+                    .date(DateUtil.getToday())
+                    .clientProgramSessionMassTrialRecords(targets)
+                    .build();
+            clientProgramSessionRepository.save(clientProgramSession);
+
+            program.addClientProgramSession(clientProgramSession);
+            programRepository.save(program);
+
+            return clientProgramSession;
         }
     }
 
@@ -315,7 +366,7 @@ public class ProgramService {
 
     public ClientProgramSessionRecord convertClientProgramSessionToRecord(Program program) {
         ClientProgramSession clientProgramSession = getActiveClientProgramSession(program);
-        if(clientProgramSession.getClientProgramSessionColdProbeRecords() != null) {
+        if(program.getColdProbeSheet() != null) {
             ColdProbeSheet coldProbeSheet = program.getColdProbeSheet();
             List<ColdProbeSheetItem> coldProbeSheetItemsSorted = coldProbeSheet.getSortedColdProbeSheetItems();
 
@@ -336,7 +387,17 @@ public class ProgramService {
         }
         else {
             // TODO handle mass trial sheet
-            return null;
+            MassTrialSheet massTrialSheet = program.getMassTrialSheet();
+            List<ClientProgramSessionMassTrialRecord> clientProgramSessionMassTrialRecords = clientProgramSession
+                    .getClientProgramSessionMassTrialRecords();
+            return ClientProgramSessionRecord
+                    .builder()
+                    .isActive(clientProgramSession.getIsActive())
+                    .date(clientProgramSession.getDate())
+                    .id(clientProgramSession.getId())
+                    .massTrialMasteredTargets(getMasteredTargetNames(massTrialSheet))
+                    .clientProgramSessionMassTrialRecords(clientProgramSessionMassTrialRecords)
+                    .build();
         }
     }
 
@@ -408,6 +469,70 @@ public class ProgramService {
          excelService.addColdProbeSession(coldProbeSheet, activeClientProgramSession, practitioner);
     }
 
+    public void persistMassTrialProgramSession(Practitioner practitioner, Program program, ClientProgramSession updates) throws ExecutionException, InterruptedException {
+        saveMassTrialProgramSession(program, updates);
+
+        Map<String, MassTrialSheetItem> targetNameToMassTrialSheetItem = new HashMap<>();
+        MassTrialSheet massTrialSheet = program.getMassTrialSheet();
+
+        var excelDriveItem = sharePointService.getDriveItemById(massTrialSheet.getSharePointId());
+        var session = sharePointService.getExcelSessionId(excelDriveItem);
+
+        List<MassTrialSheetItem> existingItems = massTrialSheet.getMassTrialSheetItems();
+
+        List<ClientProgramSessionMassTrialRecord> updatedRecords = updates.getClientProgramSessionMassTrialRecords();
+
+        for(var existingItem : existingItems) {
+            targetNameToMassTrialSheetItem.put(existingItem.getTargetName(), existingItem);
+        }
+        for(var updatedRecord : updatedRecords) {
+            if(!targetNameToMassTrialSheetItem.containsKey(updatedRecord.getTarget())) {
+                MassTrialSheetItem newItem = MassTrialSheetItem
+                        .builder()
+                        .targetName(updatedRecord.getTarget())
+                        .sheetNumber(targetNameToMassTrialSheetItem.size() + 1)
+                        .persistedSessions(0)
+                        .build();
+                massTrialSheetItemRepository.save(newItem);
+                massTrialSheet.addMassTrialSheetItem(newItem);
+                targetNameToMassTrialSheetItem.put(newItem.getTargetName(), newItem);
+                excelService.addMassTrialItem(massTrialSheet, newItem, excelDriveItem, session);
+            }
+            if(updatedRecord.getIsOmitted()) {
+                MassTrialSheetItem item = targetNameToMassTrialSheetItem.get(updatedRecord.getTarget());
+                item.setOmitted(true);
+                massTrialSheetItemRepository.save(item);
+            }
+            if(updatedRecord.getIsRecorded()) {
+                MassTrialSheetItem item = targetNameToMassTrialSheetItem.get(updatedRecord.getTarget());
+                MassTrialSheetItemEntry massTrialSheetItemEntry = MassTrialSheetItemEntry
+                        .builder()
+                        .date(DateUtil.getToday())
+                        .rating(updatedRecord.getRating())
+                        .randomReviewTargetSeries(updatedRecord.getRandomReviewTargetSeries())
+                        .yNSeries(updatedRecord.getYNSeries())
+                        .practitionerInitials(practitioner.getInitials())
+                        .build();
+                massTrialSheetItemEntry.setSuccess();
+                massTrialSheetItemEntryRepository.save(massTrialSheetItemEntry);
+                item.addMassTrialSheetItemEntry(massTrialSheetItemEntry);
+                excelService.recordMassTrialItemEntry(practitioner, massTrialSheet, item, massTrialSheetItemEntry, excelDriveItem, session);
+                item.setPersistedSessions(item.getPersistedSessions() + 1);
+                item.setLatestRating(updatedRecord.getRating());
+                if(massTrialSheetItemEntry.getSuccess() && massTrialSheetItemEntry.getRating().equalsIgnoreCase("NP3")) {
+                    item.setIsMastered(true);
+                }
+                massTrialSheetItemRepository.save(item);
+            }
+        }
+        if(getMassTrialProgression(massTrialSheet) == 100) program.setIsMastered(true);
+        program.setProgress(getMassTrialProgression(massTrialSheet));
+        programRepository.save(program);
+        updates.setDate(DateUtil.getToday());
+        updates.setIsActive(false);
+        clientProgramSessionRepository.save(updates);
+    }
+
     public double getColdProbeProgression(ColdProbeSheet coldProbeSheet) {
         long masteredTargetCount = coldProbeSheet
                 .getColdProbeSheetItems()
@@ -420,6 +545,29 @@ public class ProgramService {
                 .filter(coldProbeSheetItem -> !coldProbeSheetItem.getOmitted())
                 .count();
         return (double) masteredTargetCount / activeTargets * 100d;
+    }
+
+    public double getMassTrialProgression(MassTrialSheet massTrialSheet) {
+        List<MassTrialSheetItem> massTrialSheetItems = massTrialSheet.getMassTrialSheetItems();
+        long mastered = massTrialSheetItems
+                .stream()
+                .filter(MassTrialSheetItem::getIsMastered)
+                .count();
+        long total = massTrialSheetItems
+                .stream()
+                .filter(massTrialSheetItem -> !massTrialSheetItem.getOmitted())
+                .count();
+        if(total == 0) return 0d;
+        return (double) mastered / total * 100;
+    }
+
+    public List<String> getMasteredTargetNames(MassTrialSheet massTrialSheet) {
+        List<MassTrialSheetItem> massTrialSheetItems = massTrialSheet.getMassTrialSheetItems();
+        return massTrialSheetItems
+                .stream()
+                .filter(MassTrialSheetItem::getIsMastered)
+                .map(MassTrialSheetItem::getTargetName)
+                .toList();
     }
 
     public void saveColdProbeProgramSession(Program program, ClientProgramSession updates) {
@@ -467,6 +615,21 @@ public class ProgramService {
         }
         activeClientProgramSession.setDate(DateUtil.getToday());
         activeClientProgramSession.setClientProgramSessionColdProbeRecords(clientProgramSessionColdProbeRecordsToSave);
+        clientProgramSessionRepository.save(activeClientProgramSession);
+    }
+
+    public void saveMassTrialProgramSession(Program program, ClientProgramSession updates) {
+        ClientProgramSession activeClientProgramSession = getActiveClientProgramSession(program);
+        List<ClientProgramSessionMassTrialRecord> updatedRecords = updates
+                .getClientProgramSessionMassTrialRecords();
+
+        for(int i = 0; i < updatedRecords.size(); i++) {
+            var updatedRecord = updatedRecords.get(i);
+            updatedRecord.setSequenceNumber(i);
+        }
+        clientProgramSessionMassTrialRecordRepository.saveAll(updatedRecords);
+        activeClientProgramSession.setDate(DateUtil.getToday());
+        activeClientProgramSession.setClientProgramSessionMassTrialRecords(updatedRecords);
         clientProgramSessionRepository.save(activeClientProgramSession);
     }
 

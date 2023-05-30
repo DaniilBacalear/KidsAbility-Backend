@@ -63,5 +63,15 @@ public class MassTrialSheetItemEntry {
         }
         return nCount;
     }
+    public Double getScore() {
+        int y = getYCount();
+        int n = getNCount();
+        int total = y + n;
+        if(total == 0) return 0.0d;
+        return (double) y / total * 100;
+    }
 
+    public void setSuccess() {
+        this.success = getScore() >= 80d;
+    }
 }

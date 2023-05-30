@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity(name = "MassTrialSheet")
@@ -54,4 +55,27 @@ public class MassTrialSheet {
     @OneToMany
     @JoinColumn(name = "mass_trial_sheet_id")
     private List<MassTrialSheetItem> massTrialSheetItems;
+
+    public void addMassTrialSheetItem(MassTrialSheetItem massTrialSheetItem) {
+        if (massTrialSheetItems == null) {
+            massTrialSheetItems = new ArrayList<>();
+        }
+        massTrialSheetItems.add(massTrialSheetItem);
+    }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

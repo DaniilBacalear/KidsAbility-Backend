@@ -20,6 +20,7 @@ public class ExcelService {
     public static final int COLD_PROBE_MATRIX_ROW_END = 309;
     public static final int COLD_PROBE_MATRIX_ROW_GAP = 3;
     public static final int COLD_PROBE_MATRIX_COL_END = 31;
+    public static final int MASS_TRIAL_ROW_GAP = 3;
 
     public static final String GREY_RGB = "#C0C0C0";
     public static final String GREEN_RGB = "#00B050";
@@ -435,5 +436,86 @@ public class ExcelService {
         sharePointService.updateWorkBookRange(excelDriveItem, cellAddress, workbookRange, workSheetName, workbookSessionId);
     }
 
+    public void addMassTrialItem(MassTrialSheet massTrialSheet, MassTrialSheetItem item, DriveItem driveItem, String sessionId) {
+        var oldSheetName = "Sheet" + item.getSheetNumber();
+        var newSheetName = item.getTargetName();
+        sharePointService.updateWorkSheetName(driveItem, oldSheetName, newSheetName, sessionId);
+    }
 
+    public void recordMassTrialItemEntry(Practitioner practitioner, MassTrialSheet massTrialSheet, MassTrialSheetItem item, MassTrialSheetItemEntry entry, DriveItem driveItem, String sessionId) throws ExecutionException, InterruptedException {
+        int rowTop = item.getPersistedSessions() * MASS_TRIAL_ROW_GAP + 1;
+
+        int yRow = rowTop + 1;
+        int nRow = rowTop + 2;
+        int yNColStart = 5;
+
+
+        int dateRow = yRow;
+        int dateCol = 3;
+
+        int initialsRow = nRow;
+        int initialsCol = 3;
+
+        int promptRow = yRow;
+        int promptCol = 4;
+
+        int percentageRow = yRow;
+        int percentageCol = 15;
+
+        int targetRow = yRow;
+        int targetCol = 1;
+
+        int randomReviewRow = rowTop + 3;
+        int randomReviewColStart = yNColStart;
+
+        var yNSeries = entry.getYNSeries().toCharArray();
+        for(int i = 0; i < yNSeries.length; i++) {
+            var curr = yNSeries[i];
+            if(curr == 'Y') {
+                var cell = getCellAddress(yRow, yNColStart + i);
+                sharePointService.updateWorkBookCellFill(driveItem, cell, WorkBookFactory.getWorkBookRangeFill(GREEN_RGB), item.getTargetName(), sessionId);
+            }
+            else {
+                var cell = getCellAddress(nRow, yNColStart + i);
+                sharePointService.updateWorkBookCellFill(driveItem, cell, WorkBookFactory.getWorkBookRangeFill(RED_RGB), item.getTargetName(), sessionId);
+            }
+        }
+
+        var massTrialSheetRowEnd = 89;
+        var massTrialSheetColEnd = 16;
+        var rangeAddress = getRangeAddress(massTrialSheetRowEnd, massTrialSheetColEnd);
+        WorkbookRange workbookRange = sharePointService
+                .getWorkBookRange(driveItem, rangeAddress, item.getTargetName(), sessionId)
+                .get();
+        JsonArray matrix = workbookRange.formulas.getAsJsonArray();
+
+        matrix.get(dateRow - 1)
+                .getAsJsonArray()
+                .set(dateCol - 1, new JsonPrimitive(DateUtil.getMDY(entry.getDate())));
+
+        matrix.get(initialsRow - 1)
+                .getAsJsonArray()
+                .set(initialsCol - 1, new JsonPrimitive(practitioner.getInitials()));
+        matrix.get(promptRow - 1)
+                .getAsJsonArray()
+                .set(promptCol - 1, new JsonPrimitive(entry.getRating()));
+        matrix.get(percentageRow - 1)
+                .getAsJsonArray()
+                .set(percentageCol - 1, new JsonPrimitive(entry.getScore()));
+        matrix.get(targetRow - 1)
+                .getAsJsonArray()
+                .set(targetCol - 1, new JsonPrimitive(item.getTargetName()));
+
+        if(item.getTargetName().equalsIgnoreCase("Random Review")) {
+            var randomReviewSeries = entry.getRandomReviewTargetSeries().split("#");
+            for(int i = 0; i < randomReviewSeries.length; i++) {
+                matrix.get(randomReviewRow - 1)
+                        .getAsJsonArray()
+                        .set(randomReviewColStart + i - 1, new JsonPrimitive(randomReviewSeries[i]));
+            }
+        }
+
+        sharePointService.updateWorkBookRange(driveItem, rangeAddress, workbookRange, item.getTargetName(), sessionId);
+
+    }
 }

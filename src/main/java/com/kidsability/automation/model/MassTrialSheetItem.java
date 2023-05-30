@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity(name = "MassTrialSheetItem")
@@ -48,4 +49,11 @@ public class MassTrialSheetItem {
     @OneToMany
     @JoinColumn(name = "mass_trial_sheet_item_id")
     private List<MassTrialSheetItemEntry> massTrialSheetItemEntries;
+
+    public void addMassTrialSheetItemEntry(MassTrialSheetItemEntry massTrialSheetItemEntry) {
+        if(massTrialSheetItemEntries == null) {
+            massTrialSheetItemEntries = new ArrayList<>();
+        }
+        massTrialSheetItemEntries.add(massTrialSheetItemEntry);
+    }
 }

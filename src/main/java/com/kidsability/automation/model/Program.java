@@ -59,7 +59,7 @@ public class Program {
     @JoinColumn(name = "program_id")
     private List<ClientProgramSession> clientProgramSessions;
 
-    // CHANGE THESE TO INCLUDE MASS TRIAL SHEET OPTION!!!!!!!!
+    // TODO CHANGE THESE TO INCLUDE MASS TRIAL SHEET OPTION!!!!!!!!
     public void addClientProgramSession(ClientProgramSession clientProgramSession) {
         if(getClientProgramSessions() == null) {
             this.clientProgramSessions = new ArrayList<>();

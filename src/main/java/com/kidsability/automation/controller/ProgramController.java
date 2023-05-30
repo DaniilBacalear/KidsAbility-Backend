@@ -1,5 +1,6 @@
 package com.kidsability.automation.controller;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.kidsability.automation.customexceptions.ResourceDoesNotExistException;
@@ -89,15 +90,16 @@ public class ProgramController {
         Practitioner practitioner = practitionerService.getPractitioner(sessionToken);
         if(program == null) throw new ResourceDoesNotExistException();
         ClientProgramSession clientProgramSession = programService.getActiveClientProgramSession(program);
-        if(clientProgramSession.getClientProgramSessionColdProbeRecords() != null) {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new JavaTimeModule());
-            ClientProgramSession updatedClientProgramSession = mapper.convertValue(body, ClientProgramSession.class);
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ClientProgramSession updatedClientProgramSession = mapper.convertValue(body, ClientProgramSession.class);
+        if(program.getColdProbeSheet() != null) {
             programService.persistColdProbeProgramSession(practitioner, program, updatedClientProgramSession);
-
         }
         else {
-            // handle mass-trial session save TODO
+            // TODO handle mass-trial session save
+            programService.persistMassTrialProgramSession(practitioner, program, updatedClientProgramSession);
         }
     }
 
@@ -107,14 +109,16 @@ public class ProgramController {
         Program program = programService.getProgram(Long.parseLong(programId));
         if(program == null) throw new ResourceDoesNotExistException();
         ClientProgramSession clientProgramSession = programService.getActiveClientProgramSession(program);
-        if(clientProgramSession.getClientProgramSessionColdProbeRecords() != null) {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new JavaTimeModule());
-            ClientProgramSession updatedClientProgramSession = mapper.convertValue(body, ClientProgramSession.class);
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ClientProgramSession updatedClientProgramSession = mapper.convertValue(body, ClientProgramSession.class);
+        if(program.getColdProbeSheet() != null) {
             programService.saveColdProbeProgramSession(program, updatedClientProgramSession);
         }
         else {
-            // handle mass-trial session save TODO
+            // TODO handle mass-trial session save
+            programService.saveMassTrialProgramSession(program, updatedClientProgramSession);
         }
     }
 }
