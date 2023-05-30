@@ -14,7 +14,6 @@ import com.kidsability.automation.service.ClientService;
 import com.kidsability.automation.service.PractitionerService;
 import com.kidsability.automation.service.ProgramService;
 import com.kidsability.automation.service.SessionManagementService;
-import org.springframework.security.access.method.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -84,6 +83,7 @@ public class PractitionerController {
                             .name(p.getName())
                             .startDate(p.getStartDate())
                             .id(p.getId())
+                            .type(p.getColdProbeSheet() != null ? "coldProbe" : "massTrial")
                             .isMastered(p.getIsMastered())
                             .build()
                     )
@@ -92,9 +92,11 @@ public class PractitionerController {
         List<ProgramRecord> programRecords = new ArrayList<>();
         for(int i = 0; i < programs.size(); i++) {
             Program program = programs.get(i);
+            var type = program.getColdProbeSheet() != null ? "coldProbe" : "massTrial";
             String embeddableProgramTemplateLink = embeddableProgramTemplateLinks.get(i);
             ProgramRecord programRecord = ProgramRecord.builder()
                     .id(program.getId())
+                    .type(type)
                     .name(program.getName())
                     .startDate(program.getStartDate())
                     .isMastered(program.getIsMastered())
@@ -131,11 +133,13 @@ public class PractitionerController {
             // handle later
             embeddableProgramTemplateLink = null;
         }
+        var type = program.getColdProbeSheet() != null ? "coldProbe" : "massTrial";
         return ProgramRecord.builder()
                 .name(program.getName())
                 .startDate(program.getStartDate())
                 .id(program.getId())
                 .isMastered(program.getIsMastered())
+                .type(type)
                 .embeddableProgramTemplateLink(embeddableProgramTemplateLink)
                 .build();
     }
