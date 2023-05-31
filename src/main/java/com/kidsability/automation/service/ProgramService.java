@@ -491,6 +491,8 @@ public class ProgramService {
                         .builder()
                         .targetName(updatedRecord.getTarget())
                         .sheetNumber(targetNameToMassTrialSheetItem.size() + 1)
+                        .omitted(updatedRecord.getIsOmitted())
+                        .isMastered(false)
                         .persistedSessions(0)
                         .build();
                 massTrialSheetItemRepository.save(newItem);
