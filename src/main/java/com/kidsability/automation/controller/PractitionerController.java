@@ -3,6 +3,7 @@ package com.kidsability.automation.controller;
 import com.kidsability.automation.customexceptions.BadRequestException;
 import com.kidsability.automation.customexceptions.ResourceDoesNotExistException;
 import com.kidsability.automation.customexceptions.SessionTokenExpiredException;
+import com.kidsability.automation.model.BehaviourSession;
 import com.kidsability.automation.model.Client;
 import com.kidsability.automation.model.Practitioner;
 import com.kidsability.automation.model.Program;
@@ -163,6 +164,7 @@ public class PractitionerController {
         practitioner.addClient(toAdd);
         practitionerService.savePractitioner(practitioner);
     }
+
 
 
 }

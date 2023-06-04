@@ -1,6 +1,7 @@
 package com.kidsability.automation.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -46,6 +47,10 @@ public class Client {
     @JsonBackReference
     @JoinColumn(name = "client_id")
     private Set<Program> programs;
+
+    @JsonIgnore
+    @OneToOne
+    private Behaviour behaviour;
 
     public void addProgram(Program program) {
         if(this.getPrograms() == null) {

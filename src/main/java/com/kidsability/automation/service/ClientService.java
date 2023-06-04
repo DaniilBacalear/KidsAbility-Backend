@@ -1,29 +1,34 @@
 package com.kidsability.automation.service;
 import com.kidsability.automation.customexceptions.ClientAlreadyExistsException;
 import com.kidsability.automation.model.Client;
+import com.kidsability.automation.repository.BehaviourRepository;
 import com.kidsability.automation.repository.ClientRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @Service
 public class ClientService {
-    private ClientRepository clientRepository;
-    private SharePointService sharePointService;
+    private final ClientRepository clientRepository;
+    private final SharePointService sharePointService;
+    private final BehaviourService behaviourService;
 
-    public ClientService(ClientRepository clientRepository, SharePointService sharePointService) {
+    public ClientService(ClientRepository clientRepository, SharePointService sharePointService, BehaviourService behaviourService) {
         this.clientRepository = clientRepository;
         this.sharePointService = sharePointService;
+        this.behaviourService = behaviourService;
+
     }
-    public Client createClient(String kidsAbilityId) throws ClientAlreadyExistsException {
+    public void createClient(String kidsAbilityId) throws ClientAlreadyExistsException, ExecutionException, InterruptedException {
         if(clientExists(kidsAbilityId)) throw new ClientAlreadyExistsException();
         var client = Client.builder()
                 .kidsAbilityId(kidsAbilityId)
                 .build();
         var clientSharePointRootFolder = sharePointService.createClientFolders(client);
         client.setSharePointRootId(clientSharePointRootFolder.id);
-        System.out.println(client);
-        return clientRepository.save(client);
+        clientRepository.save(client);
+        behaviourService.initBehaviour(client);
     }
 
     public Boolean clientExists(String kidsAbilityId) {

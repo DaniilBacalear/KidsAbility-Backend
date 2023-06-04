@@ -518,4 +518,55 @@ public class ExcelService {
         sharePointService.updateWorkBookRange(driveItem, rangeAddress, workbookRange, item.getTargetName(), sessionId);
 
     }
+
+
+    public void updateBehaviourSheet(Behaviour behaviour, BehaviourSession behaviourSession) throws ExecutionException, InterruptedException {
+        List<BehaviourItem> behaviourItems = behaviour.getBehaviourItems();
+        if(behaviourItems == null) return;
+        DriveItem behaviourSheetDriveItem = sharePointService.getDriveItemById(behaviour.getSharePointId());
+        var sessionId = sharePointService.getExcelSessionId(behaviourSheetDriveItem);
+
+
+        int rowEnd = behaviour.getBehaviourSessions().size() + 1;
+        int colEnd = behaviourItems.size() + 1;
+
+        WorkbookRange workbookRange = sharePointService
+                .getWorkBookRange(behaviourSheetDriveItem, getRangeAddress(rowEnd, colEnd), "Sheet1", sessionId)
+                .get();
+
+        JsonArray matrix = workbookRange
+                .formulas
+                .getAsJsonArray();
+
+        // populate col titles
+        int colTitleRow = 0;
+        for(var behaviourItem : behaviourItems) {
+            matrix.get(colTitleRow)
+                    .getAsJsonArray()
+                    .set(behaviourItem.getExcelColNum() - 1, new JsonPrimitive(behaviourItem.getName()));
+        }
+
+        List<BehaviourSessionItem> behaviourSessionItems = behaviourSession.getBehaviourSessionItems();
+        Map<String, BehaviourSessionItem> nameToBehaviourSessionItem = new HashMap<>();
+        for(var behaviourSessionItem : behaviourSessionItems) {
+            nameToBehaviourSessionItem.put(behaviourSessionItem.getName(), behaviourSessionItem);
+        }
+
+        // update frequencies
+        for(var behaviourItem : behaviourItems) {
+            int freq = nameToBehaviourSessionItem
+                    .get(behaviourItem.getName())
+                    .getFrequency();
+            matrix.get(rowEnd - 1)
+                    .getAsJsonArray()
+                    .set(behaviourItem.getExcelColNum() - 1, new JsonPrimitive(freq));
+        }
+
+        // update date
+        matrix.get(rowEnd - 1)
+                .getAsJsonArray()
+                .set(0, new JsonPrimitive(DateUtil.getMDY(behaviourSession.getDate())));
+
+        sharePointService.updateWorkBookRange(behaviourSheetDriveItem, getRangeAddress(rowEnd, colEnd), workbookRange, "Sheet1", sessionId);
+    }
 }

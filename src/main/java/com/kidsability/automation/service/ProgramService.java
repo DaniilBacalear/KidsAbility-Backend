@@ -141,7 +141,7 @@ public class ProgramService {
     @Transactional
     public void createProgram(Program program, Client client) throws Exception {
         var resourcePath = program.getMassTrialSheet() != null
-                ? "General/Resources/mass trial sheet template.xlsx" : "General/Resources/cold probe data template.xlsx";
+                ? "General/Resources DO NOT TOUCH!/mass trial sheet template.xlsx" : "General/Resources DO NOT TOUCH!/cold probe data template.xlsx";
 
         var programTemplateToCopy = programTemplateRepository.findByName(program.getProgramTemplate().getName());
 
